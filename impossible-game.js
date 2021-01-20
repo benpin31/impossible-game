@@ -481,8 +481,8 @@ class square extends polygon {
 
 class hero {
     constructor() {
-        /*  a hero is the set of a body which is a square, and foot which will be usefull to test if the hearo land
-            on a block (the foot touch the rough of the block) or not. foot is and array of segments declared a 
+        /*  a hero is the set of a body which is a square, and foot which will be usefull to test if the hero land
+            on a block (the foot touch the roof of the block) or not. foot is and array of segments declared a 
             polygon to apply them sat algorithm. If the square is horizontal, the array contains only one segment : the 
             lowest, else it contains two segments : those around the lowest point */
         /*  Body hitBox */
@@ -520,7 +520,47 @@ class hero {
 
 }
 
-class drawingGrid {
+class platform {
+    /*  A platform is 
+         -  a square of edge length 1 and angle 0. 
+         -  the the roof which is the upper edge of the square. It is used to verify if the hero land on the platforme : 
+            the foot and the roof enter in collision, or not (in that case, if collision, it's game over)
+        A platform can only have integer abscissa and ordinate position (which correspond to center of the square beeinf x/2 and y/2) */
+    constructor(col, row) {
+        /*  xPosition and yPosition are integers. they indicate the position of the platform on grid, each cells of the grid beeing 
+            by the attribute unity of the drawing instance */
+        this.col = col ;
+        this.row = row ;
+        let platformCenter = new point(col+1/2, row+1/2) ;
+        this.platform = new square(platformCenter,[1,0]) ;
+        this.roof = new polygon([this.platform.vertices[2], this.platform.vertices[3]])
+    }
+}
+
+class grid {
+    constructor() {
+        this.grid = [] ;
+    }
+
+    addPlatform(platform) {
+        if (this.grid[platform.col] != undefined) {
+            this.grid[platform.col].push(platform) ;
+        } else {
+            this.grid[platform.col] = [platform] ;
+        }
+    } 
+
+    defaultGrid(size) {
+        this.grid = [] ;
+        let platformInstance ;
+        for (let k = 0 ; k < size ; k++) {
+            platformInstance = new platform(k,0) ;
+            this.addPlatform(platformInstance) ;
+        }
+    }
+}
+
+class drawing {
     constructor() {
         let canvas = document.getElementById("canvas");
         this.ctx = canvas.getContext("2d") ;
@@ -566,28 +606,58 @@ class drawingGrid {
         this.ctx.fillStyle = "red" ;
         this.ctx.strokeStyle = "green" ;
         this.ctx.fill(heroBody) ;
-        this.ctx.lineWidth = 3 ;
         this.ctx.stroke(heroFoot) ;
+    }
+
+    plotGrid(gridInstance) {
+        let platformDraw = new Path2D() ;
+        let roofDraw = new Path2D() ;
+
+        gridInstance.grid.forEach(gridRow => {
+            if(gridRow != undefined) {
+                gridRow.forEach(element => {
+                    if (element instanceof platform) {
+                        platformDraw.rect(this.gridAbscissa(element.col), this.gridOrdinate(element.row+1), this.unity, this.unity) ;
+                        platformDraw.closePath() ;
+                        roofDraw.moveTo(this.gridAbscissa(element.col), this.gridOrdinate(element.row+1)) ;
+                        roofDraw.lineTo(this.gridAbscissa(element.col+1), this.gridOrdinate(element.row+1)) ;
+                        roofDraw.closePath() ;
+                    }
+                })
+            }
+        })
+
+        this.ctx.fillStyle = "red" ;
+        this.ctx.strokeStyle = "green" ;
+        this.ctx.fill(platformDraw) ;
+        this.ctx.stroke(roofDraw) ;
     }
 }
 
 
 // main
 
-/*const canvasGame = document.getElementById("canvas");
+const canvasGame = document.getElementById("canvas");
 const ctx = canvasGame.getContext("2d");
 
 const canvasWidth = document.getElementById("game-interface").offsetWidth
 const canvasDimension = {unity: canvasWidth/40, width: canvasWidth, height: canvasWidth/2 }
 
 ctx.canvas.width  = canvasDimension.width;
-ctx.canvas.height = canvasDimension.height;*/
+ctx.canvas.height = canvasDimension.height;
 
-const grid = new drawingGrid();
+const drawingInstance = new drawing();
 const heroInstance = new hero();
-grid.drawGrid() ;
 heroInstance.rotate(3*Math.PI/4)
-grid.plotHero(heroInstance) ;
+
+const gridInstance = new grid() ;
+gridInstance.defaultGrid(40) ;
+
+drawingInstance.drawGrid() ;
+drawingInstance.plotHero(heroInstance) ;
+drawingInstance.plotGrid(gridInstance) ;
+
+
 
 
 /*toto = new hero() ;
@@ -599,7 +669,16 @@ console.log(toto.foot[1]) ;
 toto.rotate(Math.PI/4) ;
 console.log(toto.body) ;
 console.log(toto.foot[0]) ;
-console.log(toto.foot[1]) ;*/
+console.log(toto.foot[1]) ;
+
+titi = new platform(3,3) ;
+console.log(titi.platform.vertices)
+console.log(titi.roof.vertices)
+*/
+
+/*toto = new grid() ;
+toto.defaultGrid(10) ;
+console.log(toto.grid[3][0])*/
 
 
 
