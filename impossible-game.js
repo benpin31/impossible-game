@@ -537,18 +537,58 @@ class platform {
     }
 }
 
+class peak {
+    constructor(col, row, orientation) {
+        let point1, point2, point3 ;
+        switch(orientation) {
+            case 'up' :
+                point1 = new point(col, row) ;
+                point2 = new point(col+1, row) ;
+                point3 = new point(col+1/2, row+1) ;
+                break ;
+            case 'down' :
+                point1 = new point(col, row+1) ;
+                point2 = new point(col+1, row+1) ;
+                point3 = new point(col+1/2, row) ;
+                break ;
+            case 'left' :
+                point1 = new point(col+1, row+1) ;
+                point2 = new point(col+1, row) ;
+                point3 = new point(col, row+1/2) ;
+                break ;
+            case 'right' : 
+                point1 = new point(col, row+1) ;
+                point2 = new point(col, row) ;
+                point3 = new point(col+1, row+1/2) ;
+                break ;
+
+        }
+        this.col = col ;
+        this.row = row ;
+        this.peak = new polygon([point1, point2, point3])
+    }
+}
+
 class grid {
     constructor() {
         this.grid = [] ;
     }
 
-    addPlatform(platform) {
-        if (this.grid[platform.col] != undefined) {
-            this.grid[platform.col].push(platform) ;
+    addPlatform(platformInstance) {
+        if (this.grid[platformInstance.col] != undefined) {
+            this.grid[platformInstance.col].push(platformInstance) ;
         } else {
-            this.grid[platform.col] = [platform] ;
+            this.grid[platformInstance.col] = [platformInstance] ;
         }
     } 
+
+    addPeak(peakInstance) {
+        if (this.grid[peakInstance.col] != undefined) {
+            this.grid[peakInstance.col].push(peakInstance) ;
+        } else {
+            this.grid[peakInstance.col] = [peakInstance] ;
+        }
+    }
 
     defaultGrid(size) {
         this.grid = [] ;
@@ -612,6 +652,7 @@ class drawing {
     plotGrid(gridInstance) {
         let platformDraw = new Path2D() ;
         let roofDraw = new Path2D() ;
+        let peakDraw = new Path2D() ;
 
         gridInstance.grid.forEach(gridRow => {
             if(gridRow != undefined) {
@@ -622,6 +663,12 @@ class drawing {
                         roofDraw.moveTo(this.gridAbscissa(element.col), this.gridOrdinate(element.row+1)) ;
                         roofDraw.lineTo(this.gridAbscissa(element.col+1), this.gridOrdinate(element.row+1)) ;
                         roofDraw.closePath() ;
+                    } else if (element instanceof peak) {
+                        console.log(element)
+                        peakDraw.moveTo(this.gridAbscissa(element.peak.vertices[0].x), this.gridOrdinate(element.peak.vertices[0].y)) ;
+                        peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[1].x), this.gridOrdinate(element.peak.vertices[1].y)) ;
+                        peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[2].x), this.gridOrdinate(element.peak.vertices[2].y)) ;
+                        peakDraw.closePath() ;
                     }
                 })
             }
@@ -630,6 +677,8 @@ class drawing {
         this.ctx.fillStyle = "red" ;
         this.ctx.strokeStyle = "green" ;
         this.ctx.fill(platformDraw) ;
+        this.ctx.fill(peakDraw) ;
+        this.ctx.stroke(peakDraw) ;
         this.ctx.stroke(roofDraw) ;
     }
 }
@@ -652,6 +701,17 @@ heroInstance.rotate(3*Math.PI/4)
 
 const gridInstance = new grid() ;
 gridInstance.defaultGrid(40) ;
+let peak1 = new peak(0, 0, 'up') ;
+let peak2 = new peak(10, 4, 'left') ;
+let peak3 = new peak(15, 4, 'down') ;
+let peak4 = new peak(20, 4, 'right') ;
+
+gridInstance.addPeak(peak1) ;
+gridInstance.addPeak(peak2) ;
+gridInstance.addPeak(peak3) ;
+gridInstance.addPeak(peak4) ;
+
+console.log(gridInstance.grid[5])
 
 drawingInstance.drawGrid() ;
 drawingInstance.plotHero(heroInstance) ;
