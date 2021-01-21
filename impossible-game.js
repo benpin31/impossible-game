@@ -33,6 +33,10 @@ class point {
         this.y = y ;
     }
 
+    copy() {
+        return new point(this.x, this.y) ;
+    }
+
     sameAbsciss(other) {
         /* return true if this and other have the same abscissa */
         return this.x === other.x ;
@@ -486,16 +490,41 @@ class hero {
             polygon to apply them sat algorithm. If the square is horizontal, the array contains only one segment : the 
             lowest, else it contains two segments : those around the lowest point */
         /*  Body hitBox */
-        let intialPosition = new point(3/2,3/2) ;
+        let heroCenterCoordinate = [3/2,3/2]
+        let intialPosition = new point(heroCenterCoordinate[0],heroCenterCoordinate[1]) ;
         this.body = new square(intialPosition,[1,0] );
 
         /*  foot hitBox */
         let footPoint = this.body.getLowestPointIndex()
             // the default body have angle 0, so footpoint return always 2 points
-        let footPoint1 = this.body.vertices[footPoint[0]] ;
-        let footPoint2 = this.body.vertices[footPoint[1]] ;
+        let footPoint1 = this.body.vertices.slice()[footPoint[0]].copy() ;
+        let footPoint2 = this.body.vertices.slice()[footPoint[1]].copy() ;
         let foot1 = new polygon([footPoint1,footPoint2]);
         this.foot = [foot1]
+        console.log(footPoint1)
+
+        /*  Physical attributes 
+            Those parameters are comuted in order the hero do a jump of 4 unity heigh and 4 unity long. We use classical newtonian physic for the trajectories which says that
+            The gravity center of the hero follow the next trajectory (with t=0 as begning of a jump)
+                x(t) = vx * t
+                y(t) = -1/2*g*t^2 + vy0 * t + y0
+            where 
+                - vx is the horizontal speed or the hero : in the game it is a constant, so no need to take vx(0)
+                - g id the gravitaional constant
+                - vy0 is the initial vertical speed when jump.
+                - y0 is the initial y coordinate of the center of the hero
+            This formula work equaly when the hero fall from a bloc (in that case vz0=0) and when the heri is on a bloc (in that case, g and vy0 = 0).
+            
+            On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. xJump and zJump are fixed too
+            */
+
+            this.vx = 10 ;
+            this.xJump = 4 ;
+            this.yJump = 4 ;
+            this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // value when jump or fall from a platform : (2*this.zJump)/((this.xJump/(2*this.vx))**2) ;
+            this.vy0 = (2*this.yJump)/(this.xJump/(2*this.vx)) ; // value when jump :  (2*this.zJump)/((this.xJump/(2*this.vx))
+            this.y0 = heroCenterCoordinate[1] ;
+            this.t = 0 ; // counter of time from the begning of a jump or a fall : use to compute the transaltion the hero do in this case from t-1 to t in this case
     }
 
     rotate(angle) {
@@ -503,19 +532,44 @@ class hero {
 
         let footPoint = this.body.getLowestPointIndex()
         if (footPoint.length == 2) {
-            let footPoint1 = this.body.vertices[footPoint[0]] ;
-            let footPoint2 = this.body.vertices[footPoint[1]] ;
+            let footPoint1 = this.body.vertices[footPoint[0]].copy() ;
+            let footPoint2 = this.body.vertices[footPoint[1]].copy() ;
             let foot1 = new polygon([footPoint1,footPoint2]);
             this.foot = [foot1]
         } else {
-            let footPoint1 = this.body.vertices[footPoint[0]] ;
-            let footPoint2 = this.body.vertices[positivMod(footPoint[0]+1,4)] ;
-            let footPoint3 = this.body.vertices[positivMod(footPoint[0]-1,4)] ;
+            let footPoint1 = this.body.vertices[footPoint[0]].copy() ;
+            let footPoint2 = this.body.vertices[positivMod(footPoint[0]+1,4)].copy() ;
+            let footPoint3 = this.body.vertices[positivMod(footPoint[0]-1,4)].copy() ;
             let foot1 = new polygon([footPoint1, footPoint2]) ;
-            let foot2 = new polygon([footPoint1, footPoint3]) ;
+            let foot2 = new polygon([footPoint1.copy(), footPoint3]) ;
             this.foot = [foot1, foot2] ;
-        }
+        } 
 
+    }
+
+    translate(transactionVector) {
+        this.body.translate(transactionVector) ;
+        this.foot.forEach(footValue => {footValue.translate(transactionVector)}) ;
+    }
+
+    move(drawingInstance) {
+        /*  The gravity center of the hero follow the next trajectory (with t=0 as begning of a jump)
+                x(t) = vx * t
+                y(t) = -1/2*g*t^2 + vy0 * t + y0
+            where 
+                - vx is the horizontal speed or the hero : in the game it is a constant, so no need to take vx(0)
+                - g id the gravitaional constant
+                - vy0 is the initial vertical speed when jump.
+                - y0 is the initial y coordinate of the center of the hero
+            This formula work equaly when the hero fall from a bloc (in that case vz0=0) and when the heri is on a bloc (in that case, g and vy0 = 0).
+            
+            On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. xJump and zJump are fixed too
+            */
+
+        let dt = 1/drawingInstance.fps ;
+        this.t += dt ;
+        let translationVector = new vector(this.vx * dt, -1/2*this.g * dt * (2*this.t+dt) + this.vy0 * dt ) ;
+        this.translate(translationVector) ;
     }
 
 }
@@ -605,8 +659,9 @@ class drawing {
         let canvas = document.getElementById("canvas");
         this.ctx = canvas.getContext("2d") ;
         this.width = document.getElementById("game-interface").offsetWidth;
-        this.height = this.width/2 ;
+        this.height = this.width/3 ;
         this.unity = this.width/40;
+        this.fps = 60 ;
     }
 
     drawGrid() {
@@ -640,8 +695,6 @@ class drawing {
             heroFoot.moveTo(this.gridAbscissa(heroInstance.foot[1].vertices[0].x),this.gridOrdinate(heroInstance.foot[1].vertices[0].y) )
             heroFoot.lineTo(this.gridAbscissa(heroInstance.foot[1].vertices[1].x),this.gridOrdinate(heroInstance.foot[1].vertices[1].y) )    
         } 
-        console.log(this.gridAbscissa(heroInstance.foot[0].vertices[1].x)) ;
-        console.log(this.gridOrdinate(heroInstance.foot[0].vertices[1].y)) ;
 
         this.ctx.fillStyle = "red" ;
         this.ctx.strokeStyle = "green" ;
@@ -664,7 +717,6 @@ class drawing {
                         roofDraw.lineTo(this.gridAbscissa(element.col+1), this.gridOrdinate(element.row+1)) ;
                         roofDraw.closePath() ;
                     } else if (element instanceof peak) {
-                        console.log(element)
                         peakDraw.moveTo(this.gridAbscissa(element.peak.vertices[0].x), this.gridOrdinate(element.peak.vertices[0].y)) ;
                         peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[1].x), this.gridOrdinate(element.peak.vertices[1].y)) ;
                         peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[2].x), this.gridOrdinate(element.peak.vertices[2].y)) ;
@@ -689,15 +741,14 @@ class drawing {
 const canvasGame = document.getElementById("canvas");
 const ctx = canvasGame.getContext("2d");
 
-const canvasWidth = document.getElementById("game-interface").offsetWidth
-const canvasDimension = {unity: canvasWidth/40, width: canvasWidth, height: canvasWidth/2 }
+//const canvasWidth = document.getElementById("game-interface").offsetWidth
+///const canvasDimension = {unity: canvasWidth/40, width: canvasWidth, height: canvasWidth/5 }
 
-ctx.canvas.width  = canvasDimension.width;
-ctx.canvas.height = canvasDimension.height;
+//ctx.canvas.width  = canvasDimension.width;
+//ctx.canvas.height = canvasDimension.height;
 
 const drawingInstance = new drawing();
 const heroInstance = new hero();
-heroInstance.rotate(3*Math.PI/4)
 
 const gridInstance = new grid() ;
 gridInstance.defaultGrid(40) ;
@@ -711,14 +762,35 @@ gridInstance.addPeak(peak2) ;
 gridInstance.addPeak(peak3) ;
 gridInstance.addPeak(peak4) ;
 
-console.log(gridInstance.grid[5])
-
 drawingInstance.drawGrid() ;
 drawingInstance.plotHero(heroInstance) ;
 drawingInstance.plotGrid(gridInstance) ;
 
 
+function move() {
+    heroInstance.move(drawingInstance) ;
+    ctx.clearRect(0,0, ctx.width, ctx.height)
+    drawingInstance.drawGrid() ;
+    drawingInstance.plotHero(heroInstance) ;
+    drawingInstance.plotGrid(gridInstance) ;
 
+}
+
+function print() {
+    console.log(heroInstance)
+}
+
+const angle = { angle: Math.PI/6} ;
+console.log(angle.angle)
+
+function rotate() {
+    heroInstance.rotate(angle.angle)
+    angle.angle += Math.PI/6 ;
+    ctx.clearRect(0,0, ctx.width, ctx.height)
+    drawingInstance.drawGrid() ;
+    drawingInstance.plotHero(heroInstance) ;
+    drawingInstance.plotGrid(gridInstance) ;
+}
 
 /*toto = new hero() ;
 
