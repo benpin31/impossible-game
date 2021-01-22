@@ -67,7 +67,9 @@ class point {
         /*  translate point this of vector v. contrary to addVector : the method change directly
             the attribute of the point and return nothing */
         this.x += v.x;
+        this.x = keepNDec(this.x, 10) ;
         this.y += v.y;
+        this.y = keepNDec(this.y, 10) ;
     }
 
 }
@@ -422,7 +424,7 @@ class square extends polygon {
 
     rotate(angle) {
         /* rotate the square according to its center. angle is in radiant */
-        this.polarDirection[1] = angle ;
+        this.polarDirection[1] += angle ;
         let direction = new vector(this.polarDirection[0]*Math.cos(this.polarDirection[1]), 
             this.polarDirection[0]*Math.sin(this.polarDirection[1])) ;
 
@@ -497,8 +499,8 @@ class hero {
         /*  foot hitBox */
         let footPoint = this.body.getLowestPointIndex()
             // the default body have angle 0, so footpoint return always 2 points
-        let footPoint1 = this.body.vertices.slice()[footPoint[0]].copy() ;
-        let footPoint2 = this.body.vertices.slice()[footPoint[1]].copy() ;
+        let footPoint1 = this.body.vertices[footPoint[0]].copy() ;
+        let footPoint2 = this.body.vertices[footPoint[1]].copy() ;
         let foot1 = new polygon([footPoint1,footPoint2]);
         this.foot = [foot1]
         console.log(footPoint1)
@@ -516,15 +518,23 @@ class hero {
             This formula work equaly when the hero fall from a bloc (in that case vz0=0) and when the heri is on a bloc (in that case, g and vy0 = 0).
             
             On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. xJump and zJump are fixed too
-            */
+        */
 
-            this.vx = 10 ;
-            this.xJump = 4 ;
-            this.yJump = 4 ;
-            this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // value when jump or fall from a platform : (2*this.zJump)/((this.xJump/(2*this.vx))**2) ;
-            this.vy0 = (2*this.yJump)/(this.xJump/(2*this.vx)) ; // value when jump :  (2*this.zJump)/((this.xJump/(2*this.vx))
-            this.y0 = heroCenterCoordinate[1] ;
-            this.t = 0 ; // counter of time from the begning of a jump or a fall : use to compute the transaltion the hero do in this case from t-1 to t in this case
+        this.vx = 10 ;
+        this.xJump = 4 ;
+        this.yJump = 4 ;
+        this.g = 0 ;//(2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // value when jump or fall from a platform : (2*this.zJump)/((this.xJump/(2*this.vx))**2) ;
+        this.vy0 = 0 ;// (2*this.yJump)/(this.xJump/(2*this.vx)) ; // value when jump :  (2*this.zJump)/((this.xJump/(2*this.vx))
+        this.y0 = heroCenterCoordinate[1] ;
+        this.t = 0 ; // counter of time from the begning of a jump or a fall : use to compute the transaltion the hero do in this case from t-1 to t in this case
+        this.isJumping = false ; 
+            // use to avoid the gamer to do multiple jump, when jump, it become true and become false only when the hero land 
+    
+        /*  hero status */
+
+        this.isDead = false ;
+            
+
     }
 
     rotate(angle) {
@@ -552,7 +562,23 @@ class hero {
         this.foot.forEach(footValue => {footValue.translate(transactionVector)}) ;
     }
 
-    move(drawingInstance) {
+    footContactWithRoof(previousFoot, platformInstance) {
+        let cpt = 0 ;
+
+        for (let k = 0; k < this.foot.length; k++) {
+            let footPolygon = new polygon([this.foot[k].vertices[0], this.foot[k].vertices[1],
+                previousFoot[k][1], previousFoot[k][0]])
+                console.log(footPolygon) ;
+                console.log(platformInstance.roof)
+            if (!footPolygon.sat(platformInstance.roof)) {
+                cpt ++ ;
+            }
+        }
+
+        return cpt > 0 ;
+    }
+
+    move(drawingInstance, gridInstance) {
         /*  The gravity center of the hero follow the next trajectory (with t=0 as begning of a jump)
                 x(t) = vx * t
                 y(t) = -1/2*g*t^2 + vy0 * t + y0
@@ -566,10 +592,67 @@ class hero {
             On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. xJump and zJump are fixed too
             */
 
+        let previousFoot = [] ;
+        this.foot.forEach(foot => {
+            previousFoot.push([foot.vertices[0].copy(), foot.vertices[1].copy()]) ;
+        })
         let dt = 1/drawingInstance.fps ;
         this.t += dt ;
         let translationVector = new vector(this.vx * dt, -1/2*this.g * dt * (2*this.t+dt) + this.vy0 * dt ) ;
         this.translate(translationVector) ;
+
+        /*  Grid interaction check :
+        
+            In that part, we check hero collision with grid. Nb contact if the number of collision with body element.
+            nbContact with floor is the number of contact betwwen hero foot and floor platform. It's not a number, but the 
+            y coordinate of the platform : thanks to that, it will be easy to replace the hero at good position if it land 
+            on the floor. if there is more contact than contact with floor : it's game over */
+
+        let nbContact = 0 ;
+        let nbContactWithFloor = [] ;
+
+        let aroundGrid = gridInstance.grid.slice(Math.max(Math.floor(this.body.center.x-1),0), Math.floor(this.body.center.x+2)) ;
+
+        aroundGrid.forEach(col => {
+            if (col != undefined) {
+                col.forEach(element => {
+                    if (element instanceof platform) {
+                        if (!this.body.sat(element.platform)) {
+                            nbContact ++ ;
+                        }
+                        if (this.footContactWithRoof(previousFoot,element)) {
+                            nbContactWithFloor.push(element.platform.center) ;
+                        }
+                    } else if (element instanceof peak) {
+                        if (!this.body.sat(element.peak)) {
+                            nbContact ++ ;
+                        }
+                    }
+                })
+            }
+        })
+
+        if (nbContact > 0) {
+            if (nbContactWithFloor.length < nbContact) {
+                this.isDead = true ;
+            } else {
+                let newCenter = new point(this.body.center.x, nbContactWithFloor[0].y+1) ;
+                let translateVector = new vector(this.body.center, newCenter) ;
+                this.translate(translateVector) ;
+                console.log(this.body)
+
+                let rotationAngle = 2*Math.PI - this.body.polarDirection[1]  ;
+                this.rotate(rotationAngle) ;
+
+                this.g = 0 ;
+                this.vy0 = 0 ;
+            }
+        } else {
+            this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ;
+        }
+
+        console.log(nbContact) ;
+        console.log(nbContactWithFloor.length) ;
     }
 
 }
@@ -661,7 +744,7 @@ class drawing {
         this.width = document.getElementById("game-interface").offsetWidth;
         this.height = this.width/3 ;
         this.unity = this.width/40;
-        this.fps = 60 ;
+        this.fps = 120 ;
     }
 
     drawGrid() {
@@ -731,7 +814,7 @@ class drawing {
         this.ctx.fill(platformDraw) ;
         this.ctx.fill(peakDraw) ;
         this.ctx.stroke(peakDraw) ;
-        this.ctx.stroke(roofDraw) ;
+        this.ctx.stroke(platformDraw) ;
     }
 }
 
@@ -756,23 +839,30 @@ let peak1 = new peak(0, 0, 'up') ;
 let peak2 = new peak(10, 4, 'left') ;
 let peak3 = new peak(15, 4, 'down') ;
 let peak4 = new peak(20, 4, 'right') ;
+let platform1 = new platform(4,1) ;
 
 gridInstance.addPeak(peak1) ;
 gridInstance.addPeak(peak2) ;
 gridInstance.addPeak(peak3) ;
 gridInstance.addPeak(peak4) ;
+//gridInstance.addPlatform(platform1)
 
 drawingInstance.drawGrid() ;
 drawingInstance.plotHero(heroInstance) ;
 drawingInstance.plotGrid(gridInstance) ;
 
-
+let cpt = 0
 function move() {
-    heroInstance.move(drawingInstance) ;
+    heroInstance.move(drawingInstance, gridInstance) ;
     ctx.clearRect(0,0, ctx.width, ctx.height)
     drawingInstance.drawGrid() ;
     drawingInstance.plotHero(heroInstance) ;
     drawingInstance.plotGrid(gridInstance) ;
+    //cpt ++;
+    //console.log(cpt)
+    //if (cpt <= 120) {
+    //    setTimeout(move, 1/drawingInstance.fps * 1000)
+    //}
 
 }
 
@@ -785,7 +875,6 @@ console.log(angle.angle)
 
 function rotate() {
     heroInstance.rotate(angle.angle)
-    angle.angle += Math.PI/6 ;
     ctx.clearRect(0,0, ctx.width, ctx.height)
     drawingInstance.drawGrid() ;
     drawingInstance.plotHero(heroInstance) ;
