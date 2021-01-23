@@ -7,15 +7,7 @@ function positivMod(n, mod) {
     // classic n%mod operator gives a negative number when n < 0. This function give a positive modulo in such cases .
     return (n%mod+mod)%mod;
 }
-/*  Module polygon contains some classes to manage polygon gemetry in code. Principal classes is 
-    classes polygon which contains a method sat for (Separating Axes Theorem) which compute if two polygones are separated.
 
-    Other classes are : 
-    - point, vector, straightLine : they are requisite in polygon definitions and methods
-    - square which extend polygon in the special case of square
-*/
-
-/* Various functions */
 
 function keepNDec(x, nDec) {
     /*  "round" a number to its nDec decimal */
@@ -23,8 +15,16 @@ function keepNDec(x, nDec) {
     return Math.round(x*10 ** nDec)/(10 ** nDec);
 }
 
+/*  Module polygon : come from a js module. I don't know actually how to use them, but in the future, this part will 
+    be seprate from the main code
 
-/* Polygones object */
+    Contains some classes to manage polygon gemetry in code. Principal classes is 
+    classes polygon which contains a method sat for (Separating Axes Theorem) which compute if two polygones are separated.
+
+    Other classes are : 
+    - point, vector, straightLine : they are requisite in polygon definitions and methods
+    - square which extend polygon in the special case of square
+*/
 
 class point {
     constructor(x,y) {
@@ -220,7 +220,7 @@ class segment {
 }
 
 class polygon {
-        /*  gather some methods relatives to polygones. Polygones are given by an array of en points (their vertices).
+    /*  gather some methods relatives to polygones. Polygones are given by an array of en points (their vertices).
         Class polygon accept semgement as degenrate polygon. It can usefull to define segment as polygon to apply them
         sat algorithm. On the other hand, class polygon doesn't herit from segment, so segment method can't be applied
         directly to "segment polygon" */
@@ -267,7 +267,7 @@ class polygon {
         return res ;
     }
 
-    /*  SAT algorithm */
+    /*  SAT algorithm. Be carrefull : work only for convex polygons*/
 
     static separation(other, edge, barycenter) {
         /*  Considers a polygone with barycenter "barycenter", and "other" another polygone. Suppose
@@ -340,6 +340,8 @@ class polygon {
             to a face of either polytope or orthogonal to an edge from each polytope.
             
         Our version of sat can also sepate segments which are degenerate polygons.
+
+        Be carrefull : work only for convex polygons.
      */
 
         let thisEdges = this.edges() ;
@@ -488,16 +490,26 @@ class square extends polygon {
 
 }
 
-/* Games elements classes */
+/*  Games elements classes 
+
+    I have organize the game in three principal elements : 
+     - the heros element : on class which contains all the method of hero
+     - the grid element which contain all elements about the level. There is more than one class : some small class
+       for element as peak or platform, and a class grid
+     - the drawing element which allow to draw the game */
+
+
+    /* hero */
 
 class hero {
     constructor() {
         /*  a hero is the set of a body which is a square, and foot which will be usefull to test if the hero land
-            on a block (the foot touch the roof of the block) or not. foot is and array of segments declared a 
+            on a block (the foot touch the roof of the block) or not. Soot is and array of segments declared a 
             polygon to apply them sat algorithm. If the square is horizontal, the array contains only one segment : the 
             lowest, else it contains two segments : those around the lowest point */
+
         /*  Body hitBox */
-        let heroCenterCoordinate = [3/2,7/2]
+        let heroCenterCoordinate = [5/2,3/2]
         let intialPosition = new point(heroCenterCoordinate[0],heroCenterCoordinate[1]) ;
         this.body = new square(intialPosition,[1,0] );
 
@@ -510,38 +522,41 @@ class hero {
         this.foot = [foot1]
 
         /*  Physical attributes 
-            Those parameters are comuted in order the hero do a jump of 4 unity heigh and 4 unity long. We use classical newtonian physic for the trajectories which says that
-            The gravity center of the hero follow the next trajectory (with t=0 as begning of a jump)
+            Those parameters are computed in order the hero do a jump of 4 unity heigh and 3 unity long. 
+            We use classical newtonian physic for the trajectories which says that he gravity center of the hero 
+            follow the next trajectory (with t=0 as begning of a jump)
                 x(t) = vx * t
                 y(t) = -1/2*g*t^2 + vy0 * t + y0
             where 
                 - vx is the horizontal speed or the hero : in the game it is a constant, so no need to take vx(0)
-                - g id the gravitaional constant
+                - g id the gravitional constant
                 - vy0 is the initial vertical speed when jump.
                 - y0 is the initial y coordinate of the center of the hero
-            This formula work equaly when the hero fall from a bloc (in that case vz0=0) and when the heri is on a bloc (in that case, g and vy0 = 0).
+            This formula work equaly when the hero fall from a bloc (in that case vz0=0) and when the hero is on a 
+            bloc (in that case, g and vy0 = 0).
             
-            On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. xJump and zJump are fixed too
+            On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. 
+            xJump and zJump are fixed too
         */
 
-        this.vx = 10 ;
-        this.xJump = 4 ;
-        this.yJump = 3 ;
-        this.g = 0 ;//(2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // value when jump or fall from a platform : (2*this.zJump)/((this.xJump/(2*this.vx))**2) ;
-        this.vy0 = 0 ;// (2*this.yJump)/(this.xJump/(2*this.vx)) ; // value when jump :  (2*this.zJump)/((this.xJump/(2*this.vx))
-        this.y0 = heroCenterCoordinate[1] ;
-        this.t = 0 ; // counter of time from the begning of a jump or a fall : use to compute the transaltion the hero do in this case from t-1 to t in this case
+        this.vx = 10 ; // horizontal speed of the hero
+        this.vy0 = 0 ; // vertical speed. when jump :  (2*this.zJump)/((this.xJump/(2*this.vx))
+        this.xJump = 4 ; // length of a jump
+        this.yJump = 3 ; // height of a jump
+        this.g = 0 ; // gravitional constant. value when jump or fall from a platform : (2*this.zJump)/((this.xJump/(2*this.vx))**2) ;
+        this.t = 0 ; // counter of time when the hero begin jumping or falling in order to use equation. must be 0 at the begning of a jump or fall
         this.isJumping = false ; 
             // use to avoid the gamer to do multiple jump, when jump, it become true and become false only when the hero land 
     
         /*  hero status */
 
-        this.isDead = false ;
-            
-
+        this.hasStarted = false ;
+        this.isDead = false ; // for game over
+        
     }
 
     rotate(angle) {
+        /* rotate the hero : body + foot */
         this.body.rotate(angle) ;
 
         let footPoint = this.body.getLowestPointIndex()
@@ -562,24 +577,38 @@ class hero {
     }
 
     translate(transactionVector) {
+        /* translate the hero : body + foot */
         this.body.translate(transactionVector) ;
         this.foot.forEach(footValue => {footValue.translate(transactionVector)}) ;
     }
 
     footContactWithRoof(previousFoot, platformInstance) {
+        /*  Compute collision to know if the hero has land. The hero land on a platform if its foot have collision
+            with platform roof (see class plateform). However, because the game is not continuous but dicrete, and 
+            that roof and foot are lines, it could arive that at t, foot is above a roof and a t+1, it is below. In that
+            case, the game will consider there is no collision. To avoid that. We construct a footPolygon which is the 
+            polygon obtain by contatenate previous foot position and next foot position. Thank to that, if
+            footPolygon have collision wich the roof, it means that bettween t and t+1, the hero have land on the roof. */
         let cpt = 0 ;
 
         let footPolygon ;
         for (let k = 0; k < this.foot.length; k++) {
             let lineTest = new straightLine(this.foot[k].vertices[1], previousFoot[k][0]) ;
-
+            /*  Test if roof polygon is flat. In that case, footPolygon is a segment, and in order sat method of polygon work
+                one need to keep only two points. sat work only if there is no more than two points align in polygon*/
             if (lineTest.containPoint(previousFoot[k][1])) {
                 footPolygon = new polygon([this.foot[k].vertices[1],previousFoot[k][0]]) ;
+                /*  only arrive when the hero have rectiling movment : when it is horizontal and placed on the ground.
+                    In that case, foot have only one element and first point of the polygon is the leftest. So the segment
+                    as defined is the larger possible segment*/
             } else {
                 footPolygon = new polygon([this.foot[k].vertices[0], this.foot[k].vertices[1],
                     previousFoot[k][1], previousFoot[k][0]]) ;
             }
+            /*  the order of point is important. When moving, each point is translate from the same vector, so we need 
+                to choose order of the point to not have cross polygon */
             if (!footPolygon.sat(platformInstance.roof)) {
+                /* if one collision : it means that the hero land, we conslude verifying cpt > 0 */
                 cpt ++ ;
             }
         }
@@ -597,6 +626,10 @@ class hero {
                 - vy0 is the initial vertical speed when jump.
                 - y0 is the initial y coordinate of the center of the hero
             This formula work equaly when the hero fall from a bloc (in that case vz0=0) and when the heri is on a bloc (in that case, g and vy0 = 0).
+
+            On this methode, we consider finite diffrecne of this equation : y(t+dt) - y(t) and x(t+dt) - x(t). Because of the
+            quadratiq nature of equation 2, the time t still appears in equation for y, and so we can't keep only dt value, we 
+            need to use t.
             
             On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. xJump and zJump are fixed too
             */
@@ -605,23 +638,35 @@ class hero {
         this.foot.forEach(foot => {
             previousFoot.push([foot.vertices[0].copy(), foot.vertices[1].copy()]) ;
         })
+            // save previous foot to verify if the hero land (see method footContactWithRoof)
+
         let dt = 1/drawingInstance.fps ;
+            // time interval computed according to the game fps
+
         let translationVector = new vector(this.vx * dt, -1/2*this.g * dt * (2*this.t+dt) + this.vy0 * dt ) ;
         this.translate(translationVector) ;
-        this.t += dt ;
+            // translate the hero with finite diffrence equation
 
-        /*  Grid interaction check :
-        
-            In that part, we check hero collision with grid. Nb contact if the number of collision with body element.
-            nbContact with floor is the number of contact betwwen hero foot and floor platform. It's not a number, but the 
-            y coordinate of the platform : thanks to that, it will be easy to replace the hero at good position if it land 
-            on the floor. if there is more contact than contact with floor : it's game over */
+        this.t += dt ;
+            /*  for next step, t become t+dt. If the movement is not a jump or a fall, t will be set to 0 next. Indeed
+                t is not mandatory for recticlign horizontal movement, and that way, t will be 0 at the begning of a jump 
+                or a fall as expected.*/
+
+        /*  Grid interaction check : We test collision of the hero with its neihbourg envirenement. 
+             - collision with a peak = dead
+             - collision with a platform = dead if not collisions with the floor of the platform
+        */
 
         let nbContact = 0 ;
+            // at the end  of the collsion check, if not dead, use to know if there is at leat one contact (necessary)
+            // a foot-roof contact, a modify physical constant in consequence
         let floorContactCoordinate = [] ;
+            // if landing, use to replace the hero to good coordinate. Indeed, because of the non consinuity, the hero could
+            // be below a roof, floorContactCoordinate contains the coOrdinates of the platform where the hero land,
+            // and this way, we can corrEct y position of the hero
 
         let aroundGrid = gridInstance.grid.slice(Math.max(Math.floor(this.body.center.x-1),0), Math.floor(this.body.center.x+2)) ;
-
+        // neighbour elements grid of the hero
         aroundGrid.forEach(col => {
             if (col != undefined) {
                 col.forEach(element => {
@@ -643,6 +688,11 @@ class hero {
             }
         })
 
+        if (this.body.center.y < 0.5) {
+            /*  The lower set of roof have coordinate 1, if the square fall under it, it means that it falls in a hole */
+            this.isDead = true ;
+        }
+
         if (!this.isDead) {
             if (nbContact > 0) {
                 let newCenter = new point(this.body.center.x, floorContactCoordinate[0].y+1) ;
@@ -651,81 +701,105 @@ class hero {
 
                 this.rotate(2*Math.PI - this.body.polarDirection[1]) ;
 
-                this.g = 0 ;
-                this.vy0 = 0 ;
-                this.t = 0 ;
+                this.g = 0 ; // g is compensated by newton 3rd law
+                this.vy0 = 0 ; // the vertical movment stop
+                this.t = 0 ; // t is not mandatory in equation anymore, and will be 0 at the begning of a jump or a fall
+                this.isJumping = false ; // the gamer can jump
             } else {
-                this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ;
-                this.rotate(-Math.PI/(drawingInstance.fps * this.xJump/(2*this.vx))) ;
+                this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // no compensation by newton 3rd law
+                this.rotate(-Math.PI/(drawingInstance.fps * this.xJump/(2*this.vx))) ; // to look pretty : the hero rotate when not on a roof
+                this.isJumping = true ; // can't jump before the end of the jump /fall
             }
         }
-
-        console.log(this.isDead)
     }
 
     jump() {
-        this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ;
-        this.vy0 = (2*this.yJump)/(this.xJump/(2*this.vx)) ;
-        this.t = 0;
+        /* Modify physical constant in order to the next move (methode move) is a jump */
+        if(!this.isJumping) {
+            this.isJumping = true ; // during a jump, the hero can't jump anymore
+            // can't jump if already jumping
+            this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // no compensation by newton 3rd law
+            this.vy0 = (2*this.yJump)/(this.xJump/(2*this.vx)) ; // to look pretty : the hero rotate when not on a roof
+            this.t = 0; // at the begning of a jump, t must be = 0 in order to the equation are ok
+        }
     }
 
 }
+
+    /*  Grid elements : 
+        
+        Two kind of grid elements : 
+        - platform on which one can land, or crash if foot hero don't touch platform roof
+        - peak on which one can die*/
 
 class platform {
     /*  A platform is 
          -  a square of edge length 1 and angle 0. 
          -  the the roof which is the upper edge of the square. It is used to verify if the hero land on the platforme : 
             the foot and the roof enter in collision, or not (in that case, if collision, it's game over)
-        A platform can only have integer abscissa and ordinate position (which correspond to center of the square beeinf x/2 and y/2) */
-    constructor(col, row) {
-        /*  xPosition and yPosition are integers. they indicate the position of the platform on grid, each cells of the grid beeing 
-            by the attribute unity of the drawing instance */
-        this.col = col ;
-        this.row = row ;
-        let platformCenter = new point(col+1/2, row+1/2) ;
+            
+        For each element one add col = floor(x-positon) attribute. Elements will be organized on a grid which is an array. In array
+        cell n, we will place all element which col = n. That way, it is easy to get all element of the neibourhood
+        of the hero to test collisions*/
+    constructor(x, y) {
+        /* x,y are the coordinates of the center of the platform */
+        this.col = Math.floor(x) ;
+        let platformCenter = new point(x, y) ;
         this.platform = new square(platformCenter,[1,0]) ;
         this.roof = new polygon([this.platform.vertices[2], this.platform.vertices[3]])
     }
 }
 
 class peak {
-    constructor(col, row, orientation) {
+        /*  peak is a triangle. There is 4 kind of peak according to there orientation.
+            
+        For each element one add col = floor(x-positon) attribute. Elements will be organized on a grid which is an array. In array
+        cell n, we will place all element which col = n. That way, it is easy to get all element of the neibourhood
+        of the hero to test collisions*/
+    constructor(x, y, orientation) {
+        /* x, y are the coordinates of the lowest leftest point of the square in which the triangle is inscribed */
         let point1, point2, point3 ;
         switch(orientation) {
             case 'up' :
-                point1 = new point(col, row) ;
-                point2 = new point(col+1, row) ;
-                point3 = new point(col+1/2, row+1) ;
+                point1 = new point(x, y) ;
+                point2 = new point(x+1, y) ;
+                point3 = new point(x+1/2, y+1) ;
                 break ;
             case 'down' :
-                point1 = new point(col, row+1) ;
-                point2 = new point(col+1, row+1) ;
-                point3 = new point(col+1/2, row) ;
+                point1 = new point(x, y+1) ;
+                point2 = new point(x+1, y+1) ;
+                point3 = new point(x+1/2, y) ;
                 break ;
             case 'left' :
-                point1 = new point(col+1, row+1) ;
-                point2 = new point(col+1, row) ;
-                point3 = new point(col, row+1/2) ;
+                point1 = new point(x+1, y+1) ;
+                point2 = new point(x+1, y) ;
+                point3 = new point(x, y+1/2) ;
                 break ;
             case 'right' : 
-                point1 = new point(col, row+1) ;
-                point2 = new point(col, row) ;
-                point3 = new point(col+1, row+1/2) ;
+                point1 = new point(x, y+1) ;
+                point2 = new point(x, y) ;
+                point3 = new point(x+1, y+1/2) ;
                 break ;
 
         }
-        this.col = col ;
-        this.row = row ;
+        this.col = Math.floor(x) ;
         this.peak = new polygon([point1, point2, point3])
     }
 }
 
 class grid {
+    /*  grid is a discretisation of the level. All element have a col value which is the floor of there x-position.
+         Those element will be organized on the grid which is an array. In array cell n, we will place all element
+        which col = n. That way, it is easy to get all element of the neibourhood
+        of the hero to test collisions*/
+     
     constructor() {
+        /* by default a grid is empty, we add element using methodes */
         this.grid = [] ;
     }
 
     addPlatform(platformInstance) {
+        /*  Given a platform, place a platform in the grid */
         if (this.grid[platformInstance.col] != undefined) {
             this.grid[platformInstance.col].push(platformInstance) ;
         } else {
@@ -734,6 +808,7 @@ class grid {
     } 
 
     addPeak(peakInstance) {
+        /*  Given a peak, place a platform in the grid */
         if (this.grid[peakInstance.col] != undefined) {
             this.grid[peakInstance.col].push(peakInstance) ;
         } else {
@@ -741,15 +816,26 @@ class grid {
         }
     }
 
+
+    removeCol(start, end) {
+        /* remove the entire element of grid from col start to col end exclude (begning by 0) */
+        for (let k = start; k < end; k++) {
+            this.grid[k] = undefined ;
+        }
+    }
+
     defaultGrid(size) {
+        /* create a default frid with a default ground of platform on first row. */
         this.grid = [] ;
         let platformInstance ;
         for (let k = 0 ; k < size ; k++) {
-            platformInstance = new platform(k,0) ;
+            platformInstance = new platform(k+1/2,1/2) ;
             this.addPlatform(platformInstance) ;
         }
     }
 }
+
+    /*  drawing class : gather all element used to draw each frame of the game */
 
 class drawing {
     constructor() {
@@ -758,7 +844,7 @@ class drawing {
         this.width = document.getElementById("game-interface").offsetWidth;
         this.height = this.width/3 ;
         this.unity = this.width/40;
-        this.fps = 120 ;
+        this.fps = 60 ;
     }
 
     drawGrid() {
@@ -767,7 +853,7 @@ class drawing {
     }
 
     gridAbscissa(x) {
-        /*  scalme abscissa to this.unity */
+        /*  scale abscissa to this.unity */
         return x*this.unity ;
     }
 
@@ -778,45 +864,47 @@ class drawing {
     }
 
     plotHero(heroInstance) {
+        let heroCenterXPosition = heroInstance.body.center.x - 4 ;
         let heroBody = new Path2D() ;
-        heroBody.moveTo(this.gridAbscissa(heroInstance.body.vertices[0].x), this.gridOrdinate(heroInstance.body.vertices[0].y));
-        heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[1].x), this.gridOrdinate(heroInstance.body.vertices[1].y));
-        heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[2].x), this.gridOrdinate(heroInstance.body.vertices[2].y));
-        heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[3].x), this.gridOrdinate(heroInstance.body.vertices[3].y));
+        heroBody.moveTo(this.gridAbscissa(heroInstance.body.vertices[0].x - heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[0].y));
+        heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[1].x - heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[1].y));
+        heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[2].x - heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[2].y));
+        heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[3].x - heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[3].y));
         heroBody.closePath();
 
-        let heroFoot = new Path2D() ;
+        /*let heroFoot = new Path2D() ;
         heroFoot.moveTo(this.gridAbscissa(heroInstance.foot[0].vertices[0].x),this.gridOrdinate(heroInstance.foot[0].vertices[0].y) )
         heroFoot.lineTo(this.gridAbscissa(heroInstance.foot[0].vertices[1].x),this.gridOrdinate(heroInstance.foot[0].vertices[1].y) )
         if (heroInstance.foot.length === 2) {
             heroFoot.moveTo(this.gridAbscissa(heroInstance.foot[1].vertices[0].x),this.gridOrdinate(heroInstance.foot[1].vertices[0].y) )
             heroFoot.lineTo(this.gridAbscissa(heroInstance.foot[1].vertices[1].x),this.gridOrdinate(heroInstance.foot[1].vertices[1].y) )    
-        } 
+        } */
 
         this.ctx.fillStyle = "red" ;
-        this.ctx.strokeStyle = "green" ;
+        /*this.ctx.strokeStyle = "green" ;*/
         this.ctx.fill(heroBody) ;
-        this.ctx.stroke(heroFoot) ;
+        /*this.ctx.stroke(heroFoot) ;*/
     }
 
-    plotGrid(gridInstance) {
+    plotGrid(gridInstance, heroInstance) {
+        let heroCenterXPosition = heroInstance.body.center.x - 4 ;
+        let minColToKeep = Math.floor(Math.max(heroCenterXPosition, 0));
+        let maxColToKeep = Math.floor(heroInstance.body.center.x+40)
+
         let platformDraw = new Path2D() ;
-        let roofDraw = new Path2D() ;
         let peakDraw = new Path2D() ;
 
-        gridInstance.grid.forEach(gridRow => {
+        gridInstance.grid.slice(minColToKeep, maxColToKeep).forEach(gridRow => {
             if(gridRow != undefined) {
                 gridRow.forEach(element => {
                     if (element instanceof platform) {
-                        platformDraw.rect(this.gridAbscissa(element.col), this.gridOrdinate(element.row+1), this.unity, this.unity) ;
+                        platformDraw.rect(this.gridAbscissa(element.platform.vertices[3].x - heroCenterXPosition), this.gridOrdinate(element.platform.vertices[3].y), this.unity, this.unity) ;
+                        // By construction of square, the 4's point of a platform is the upper left
                         platformDraw.closePath() ;
-                        roofDraw.moveTo(this.gridAbscissa(element.col), this.gridOrdinate(element.row+1)) ;
-                        roofDraw.lineTo(this.gridAbscissa(element.col+1), this.gridOrdinate(element.row+1)) ;
-                        roofDraw.closePath() ;
                     } else if (element instanceof peak) {
-                        peakDraw.moveTo(this.gridAbscissa(element.peak.vertices[0].x), this.gridOrdinate(element.peak.vertices[0].y)) ;
-                        peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[1].x), this.gridOrdinate(element.peak.vertices[1].y)) ;
-                        peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[2].x), this.gridOrdinate(element.peak.vertices[2].y)) ;
+                        peakDraw.moveTo(this.gridAbscissa(element.peak.vertices[0].x - heroCenterXPosition), this.gridOrdinate(element.peak.vertices[0].y)) ;
+                        peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[1].x - heroCenterXPosition), this.gridOrdinate(element.peak.vertices[1].y)) ;
+                        peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[2].x - heroCenterXPosition), this.gridOrdinate(element.peak.vertices[2].y)) ;
                         peakDraw.closePath() ;
                     }
                 })
@@ -838,55 +926,46 @@ class drawing {
 const canvasGame = document.getElementById("canvas");
 const ctx = canvasGame.getContext("2d");
 
-//const canvasWidth = document.getElementById("game-interface").offsetWidth
-///const canvasDimension = {unity: canvasWidth/40, width: canvasWidth, height: canvasWidth/5 }
-
-//ctx.canvas.width  = canvasDimension.width;
-//ctx.canvas.height = canvasDimension.height;
-
 const drawingInstance = new drawing();
 const heroInstance = new hero();
 
+const keys = {};
+
 const gridInstance = new grid() ;
-gridInstance.defaultGrid(40) ;
-let peak1 = new peak(5, 4, 'down') ;
-let peak2 = new peak(10, 4, 'left') ;
-let peak3 = new peak(15, 4, 'down') ;
-let peak4 = new peak(20, 4, 'right') ;
-let platform1 = new platform(1,2) ;
-let platform2 = new platform(5,3) ;
-let platform3 = new platform(5,2) ;
+gridInstance.defaultGrid(1200) ;
+let peak1 ;
 
-
-//gridInstance.addPeak(peak1) ;
-//gridInstance.addPeak(peak2) ;
-//gridInstance.addPeak(peak3) ;
-//gridInstance.addPeak(peak4) ;
-gridInstance.addPlatform(platform1) ;
-gridInstance.addPlatform(platform2) ;
-gridInstance.addPlatform(platform3) ;
+for (let k = 4; k < 300; k = k+4) {
+    peak1 = new peak(k,8,"down") ;
+    gridInstance.addPeak(peak1) ;
+}
 
 drawingInstance.drawGrid() ;
 drawingInstance.plotHero(heroInstance) ;
-drawingInstance.plotGrid(gridInstance) ;
+drawingInstance.plotGrid(gridInstance, heroInstance) ;
 
 let cpt = 0
+let stepTimeout = 0 ;
 function moveAfterJump() {
-    heroInstance.move(drawingInstance, gridInstance) ;
-    ctx.clearRect(0,0, ctx.width, ctx.height)
-    drawingInstance.drawGrid() ;
-    drawingInstance.plotHero(heroInstance) ;
-    drawingInstance.plotGrid(gridInstance) ;
-    cpt ++;
-    console.log(cpt)
-    if (cpt <= 120) {
-        setTimeout(moveAfterJump, 1/drawingInstance.fps * 1000)
+    if (cpt < 10*drawingInstance.fps && !heroInstance.isDead) {
+        if(keys.Space) {
+            jump() ;
+        }
+        heroInstance.move(drawingInstance, gridInstance) ;
+        ctx.clearRect(0,0, ctx.width, ctx.height)
+        drawingInstance.drawGrid() ;
+        drawingInstance.plotHero(heroInstance) ;
+        drawingInstance.plotGrid(gridInstance, heroInstance) ;
+        cpt ++;
+        stepTimeout = setTimeout(moveAfterJump, 1/drawingInstance.fps * 1000);
+    } else {
+        titi = Date.now() ;
+        console.log(titi - toto)
     }
 
 }
 
 function move() {
-    jump() ;
     moveAfterJump();
 }
 
@@ -899,15 +978,27 @@ function jump() {
 }
 
 const angle = { angle: Math.PI/6} ;
-console.log(angle.angle)
 
 function rotate() {
     heroInstance.rotate(angle.angle)
     ctx.clearRect(0,0, ctx.width, ctx.height)
     drawingInstance.drawGrid() ;
     drawingInstance.plotHero(heroInstance) ;
-    drawingInstance.plotGrid(gridInstance) ;
+    drawingInstance.plotGrid(gridInstance, heroInstance) ;
 }
+
+function keyEventHandler(event){
+    if (!heroInstance.hasStarted) {
+        heroInstance.hasStarted = true ;
+        move()
+    }
+    keys[event.code] = event.type === "keydown";
+    event.preventDefault();
+}
+window.addEventListener("keydown",keyEventHandler);
+window.addEventListener("keyup",keyEventHandler);
+
+
 
 /*toto = new hero() ;
 
