@@ -167,6 +167,11 @@ class straightLine {
         }
     }
 
+    containPoint(point) {
+        let equationLine = this.equation() ;
+        return keepNDec(equationLine[0]*point.x + equationLine[1]*point.y + equationLine[2], 10) === 0 ;
+    }
+
 }
 
 class segment {
@@ -492,7 +497,7 @@ class hero {
             polygon to apply them sat algorithm. If the square is horizontal, the array contains only one segment : the 
             lowest, else it contains two segments : those around the lowest point */
         /*  Body hitBox */
-        let heroCenterCoordinate = [3/2,3/2]
+        let heroCenterCoordinate = [3/2,7/2]
         let intialPosition = new point(heroCenterCoordinate[0],heroCenterCoordinate[1]) ;
         this.body = new square(intialPosition,[1,0] );
 
@@ -503,7 +508,6 @@ class hero {
         let footPoint2 = this.body.vertices[footPoint[1]].copy() ;
         let foot1 = new polygon([footPoint1,footPoint2]);
         this.foot = [foot1]
-        console.log(footPoint1)
 
         /*  Physical attributes 
             Those parameters are comuted in order the hero do a jump of 4 unity heigh and 4 unity long. We use classical newtonian physic for the trajectories which says that
@@ -522,7 +526,7 @@ class hero {
 
         this.vx = 10 ;
         this.xJump = 4 ;
-        this.yJump = 4 ;
+        this.yJump = 3 ;
         this.g = 0 ;//(2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // value when jump or fall from a platform : (2*this.zJump)/((this.xJump/(2*this.vx))**2) ;
         this.vy0 = 0 ;// (2*this.yJump)/(this.xJump/(2*this.vx)) ; // value when jump :  (2*this.zJump)/((this.xJump/(2*this.vx))
         this.y0 = heroCenterCoordinate[1] ;
@@ -565,11 +569,16 @@ class hero {
     footContactWithRoof(previousFoot, platformInstance) {
         let cpt = 0 ;
 
+        let footPolygon ;
         for (let k = 0; k < this.foot.length; k++) {
-            let footPolygon = new polygon([this.foot[k].vertices[0], this.foot[k].vertices[1],
-                previousFoot[k][1], previousFoot[k][0]])
-                console.log(footPolygon) ;
-                console.log(platformInstance.roof)
+            let lineTest = new straightLine(this.foot[k].vertices[1], previousFoot[k][0]) ;
+
+            if (lineTest.containPoint(previousFoot[k][1])) {
+                footPolygon = new polygon([this.foot[k].vertices[1],previousFoot[k][0]]) ;
+            } else {
+                footPolygon = new polygon([this.foot[k].vertices[0], this.foot[k].vertices[1],
+                    previousFoot[k][1], previousFoot[k][0]]) ;
+            }
             if (!footPolygon.sat(platformInstance.roof)) {
                 cpt ++ ;
             }
@@ -597,9 +606,9 @@ class hero {
             previousFoot.push([foot.vertices[0].copy(), foot.vertices[1].copy()]) ;
         })
         let dt = 1/drawingInstance.fps ;
-        this.t += dt ;
         let translationVector = new vector(this.vx * dt, -1/2*this.g * dt * (2*this.t+dt) + this.vy0 * dt ) ;
         this.translate(translationVector) ;
+        this.t += dt ;
 
         /*  Grid interaction check :
         
@@ -609,7 +618,7 @@ class hero {
             on the floor. if there is more contact than contact with floor : it's game over */
 
         let nbContact = 0 ;
-        let nbContactWithFloor = [] ;
+        let floorContactCoordinate = [] ;
 
         let aroundGrid = gridInstance.grid.slice(Math.max(Math.floor(this.body.center.x-1),0), Math.floor(this.body.center.x+2)) ;
 
@@ -619,40 +628,45 @@ class hero {
                     if (element instanceof platform) {
                         if (!this.body.sat(element.platform)) {
                             nbContact ++ ;
-                        }
-                        if (this.footContactWithRoof(previousFoot,element)) {
-                            nbContactWithFloor.push(element.platform.center) ;
-                        }
+                            if (this.footContactWithRoof(previousFoot,element)) {
+                                floorContactCoordinate.push(element.platform.center) ;
+                            } else {
+                                this.isDead = true ;
+                            }                        }
                     } else if (element instanceof peak) {
                         if (!this.body.sat(element.peak)) {
                             nbContact ++ ;
+                            this.isDead = true ;
                         }
                     }
                 })
             }
         })
 
-        if (nbContact > 0) {
-            if (nbContactWithFloor.length < nbContact) {
-                this.isDead = true ;
-            } else {
-                let newCenter = new point(this.body.center.x, nbContactWithFloor[0].y+1) ;
+        if (!this.isDead) {
+            if (nbContact > 0) {
+                let newCenter = new point(this.body.center.x, floorContactCoordinate[0].y+1) ;
                 let translateVector = new vector(this.body.center, newCenter) ;
                 this.translate(translateVector) ;
-                console.log(this.body)
 
-                let rotationAngle = 2*Math.PI - this.body.polarDirection[1]  ;
-                this.rotate(rotationAngle) ;
+                this.rotate(2*Math.PI - this.body.polarDirection[1]) ;
 
                 this.g = 0 ;
                 this.vy0 = 0 ;
+                this.t = 0 ;
+            } else {
+                this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ;
+                this.rotate(-Math.PI/(drawingInstance.fps * this.xJump/(2*this.vx))) ;
             }
-        } else {
-            this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ;
         }
 
-        console.log(nbContact) ;
-        console.log(nbContactWithFloor.length) ;
+        console.log(this.isDead)
+    }
+
+    jump() {
+        this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ;
+        this.vy0 = (2*this.yJump)/(this.xJump/(2*this.vx)) ;
+        this.t = 0;
     }
 
 }
@@ -835,39 +849,53 @@ const heroInstance = new hero();
 
 const gridInstance = new grid() ;
 gridInstance.defaultGrid(40) ;
-let peak1 = new peak(0, 0, 'up') ;
+let peak1 = new peak(5, 4, 'down') ;
 let peak2 = new peak(10, 4, 'left') ;
 let peak3 = new peak(15, 4, 'down') ;
 let peak4 = new peak(20, 4, 'right') ;
-let platform1 = new platform(4,1) ;
+let platform1 = new platform(1,2) ;
+let platform2 = new platform(5,3) ;
+let platform3 = new platform(5,2) ;
 
-gridInstance.addPeak(peak1) ;
-gridInstance.addPeak(peak2) ;
-gridInstance.addPeak(peak3) ;
-gridInstance.addPeak(peak4) ;
-//gridInstance.addPlatform(platform1)
+
+//gridInstance.addPeak(peak1) ;
+//gridInstance.addPeak(peak2) ;
+//gridInstance.addPeak(peak3) ;
+//gridInstance.addPeak(peak4) ;
+gridInstance.addPlatform(platform1) ;
+gridInstance.addPlatform(platform2) ;
+gridInstance.addPlatform(platform3) ;
 
 drawingInstance.drawGrid() ;
 drawingInstance.plotHero(heroInstance) ;
 drawingInstance.plotGrid(gridInstance) ;
 
 let cpt = 0
-function move() {
+function moveAfterJump() {
     heroInstance.move(drawingInstance, gridInstance) ;
     ctx.clearRect(0,0, ctx.width, ctx.height)
     drawingInstance.drawGrid() ;
     drawingInstance.plotHero(heroInstance) ;
     drawingInstance.plotGrid(gridInstance) ;
-    //cpt ++;
-    //console.log(cpt)
-    //if (cpt <= 120) {
-    //    setTimeout(move, 1/drawingInstance.fps * 1000)
-    //}
+    cpt ++;
+    console.log(cpt)
+    if (cpt <= 120) {
+        setTimeout(moveAfterJump, 1/drawingInstance.fps * 1000)
+    }
 
+}
+
+function move() {
+    jump() ;
+    moveAfterJump();
 }
 
 function print() {
     console.log(heroInstance)
+}
+
+function jump() {
+    heroInstance.jump() ;
 }
 
 const angle = { angle: Math.PI/6} ;
