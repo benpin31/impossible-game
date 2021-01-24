@@ -645,7 +645,6 @@ class hero {
         this.foot.forEach(foot => {
             previousFoot.push([foot.vertices[0].copy(), foot.vertices[1].copy()]) ;
         })
-        console.log(previousFoot)
 
             // save previous foot to verify if the hero land (see method footContactWithRoof)
 
@@ -666,17 +665,17 @@ class hero {
              - collision with a platform = dead if not collisions with the floor of the platform
         */
 
-        let nbContact = 0 ;
             // at the end  of the collsion check, if not dead, use to know if there is at leat one contact (necessary)
             // a foot-roof contact, a modify physical constant in consequence
-        let floorContactCoordinate = [] ;
+        let deadContactElementCenter = [] ;
+        let floorContactElementCenter = [] ;
             // if landing, use to replace the hero to good coordinate. Indeed, because of the non consinuity, the hero could
             // be below a roof, floorContactCoordinate contains the coOrdinates of the platform where the hero land,
             // and this way, we can corrEct y position of the hero
 
         let aroundGrid = gridInstance.grid.slice(Math.max(Math.floor(this.body.center.x-1),0), Math.floor(this.body.center.x+2)) ;
         // neighbour elements grid of the hero
-        aroundGrid.forEach(col => {
+        /*aroundGrid.forEach(col => {
             if (col != undefined) {
                 col.forEach(element => {
                     if (element instanceof platform) {
@@ -701,16 +700,69 @@ class hero {
                     }
                 })
             }
+        })*/
+
+        aroundGrid.forEach(col => {
+            if (col != undefined) {
+                col.forEach(element => {
+                    if (element instanceof platform) {
+                        if (!this.body.sat(element.platform)) {
+                            if (this.footContactWithRoof(previousFoot,element)) {
+                                floorContactElementCenter.push(element.platform.center.y) ;
+                            } else {
+                                deadContactElementCenter.push(element.platform.center.y) ;
+                            }                        }
+                    } else if (element instanceof peak) {
+                        if (!this.body.sat(element.peak)) {
+                            deadContactElementCenter.push(element.center.y) ;
+                        }
+                    } else if (element instanceof ending) {
+                        if (!this.body.sat(element.ending)) {
+                            this.haveFinished = true ;
+                        }
+                    }
+                })
+            }
         })
+
+        console.log(deadContactElementCenter) ;
+        console.log(floorContactElementCenter) ;
+
+        let maxDeadContactCenter, maxFloorContactCenter ;
+
+        if(deadContactElementCenter.length > 0) {
+            maxDeadContactCenter = deadContactElementCenter.reduce(function(a, b) {return Math.max(a, b);});
+        } else {
+            maxDeadContactCenter = -Infinity ;
+        }
+
+        if(floorContactElementCenter.length > 0) {
+            maxFloorContactCenter = floorContactElementCenter.reduce(function(a, b) {return Math.max(a, b);});
+        } else {
+            maxFloorContactCenter = -Infinity ;
+        }
+
+        if(deadContactElementCenter.length > 0) {
+            if(floorContactElementCenter.length === 0) {
+                this.isDead = true ;
+            } else {
+                if(maxDeadContactCenter > maxFloorContactCenter) {
+                    this.isDead = true ;
+                }
+            }
+        }
 
         if (this.body.center.y < 0) {
             /*  The lower set of roof have coordinate 1, if the square fall under it, it means that it falls in a hole */
             this.isDead = true ;
+            let newCenter = new point(this.body.center.x, 0.5) ;
+            let translateVector = new vector(this.body.center, newCenter) ;
+            this.translate(translateVector) ;
         }
 
         if (!this.isDead) {
-            if (nbContact > 0) {
-                let newCenter = new point(this.body.center.x, floorContactCoordinate[0].y+1) ;
+            if (floorContactElementCenter.length > 0) {
+                let newCenter = new point(this.body.center.x, maxFloorContactCenter+1) ;
                 let translateVector = new vector(this.body.center, newCenter) ;
                 this.translate(translateVector) ;
 
@@ -783,7 +835,7 @@ class peak {
         of the hero to test collisions*/
     constructor(x, y, orientation) {
         /* x, y are the coordinates of the lowest leftest point of the square in which the triangle is inscribed */
-        let point1, point2, point3 ;
+        let point1, point2, point3, center ;
         switch(orientation) {
             case 'up' :
                 point1 = new point(x, y) ;
@@ -808,7 +860,8 @@ class peak {
 
         }
         this.col = Math.floor(x) ;
-        this.peak = new polygon([point1, point2, point3])
+        this.peak = new polygon([point1, point2, point3]) ;
+        this.center = new point(x+1/2, y+1/2)
     }
 }
 
@@ -982,7 +1035,7 @@ class drawing {
                     } else if (element instanceof peak) {
                         peakDraw.moveTo(this.gridAbscissa(element.peak.vertices[0].x - this.heroCenterXPosition), this.gridOrdinate(element.peak.vertices[0].y + this.heroAjustYPosition)) ;
                         peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[1].x - this.heroCenterXPosition), this.gridOrdinate(element.peak.vertices[1].y + this.heroAjustYPosition)) ;
-                        peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[2].x - this.heroCenterXPosition), this.gridOrdinate(element.peak.vertices[2].y + heroAjustYPosition)) ;
+                        peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[2].x - this.heroCenterXPosition), this.gridOrdinate(element.peak.vertices[2].y + this.heroAjustYPosition)) ;
                         peakDraw.closePath() ;
                     }
                 })
@@ -1018,11 +1071,26 @@ function level1(gridInstance, heroInstance) {
     
     
     let platform1 ;
-    for (let k = 0; k < 10 ; k++) {
+    for (let k = 0; k < 13 ; k++) {
         platform1 = new platform(10+k + exaliterSpace, 15+3/2) ;
         gridInstance.addPlatform(platform1) ;
     }
-    
+
+    platform1 = new platform(10+13 + exaliterSpace, 16+3/2) ;
+    gridInstance.addPlatform(platform1) ;
+    platform1 = new platform(10+13 + exaliterSpace, 17+3/2) ;
+    gridInstance.addPlatform(platform1) ;
+    platform1 = new platform(10+13 + exaliterSpace, 18+3/2) ;
+    gridInstance.addPlatform(platform1) ;
+
+    /*for (let k = 7; k < 13 ; k++) {
+        platform1 = new peak(10+k-1/2 + exaliterSpace, 15+1.2, 'up') ;
+        gridInstance.addPeak(platform1) ;
+    }*/
+
+        //gridInstance.removeCol(14,28)
+
+
     /*for (let k = 15; k < 20; k++) {
         platform1 = new platform(15+ k-14 + 14*exaliterSpace, 15+3/2) ;
         gridInstance.addPlatform(platform1) ;
@@ -1088,7 +1156,7 @@ function game() {
         drawingInstance.setGridPosition(heroInstance) ;
         drawingInstance.drawHero(heroInstance) ;
         drawingInstance.drawGrid(gridInstance, heroInstance) ;
-        //setTimeout(game, 1/drawingInstance.fps * 1000);
+        setTimeout(game, 1/drawingInstance.fps * 1000);
         cptBeforePossibleJump++ ;
     } else {
         if (heroInstance.isDead) {
