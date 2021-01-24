@@ -511,7 +511,7 @@ class hero {
             lowest, else it contains two segments : those around the lowest point */
 
         /*  Body hitBox */
-        let intialPosition = new point(5/2, 3/2) ;
+        let intialPosition = new point(15+3/2, 16+3/2) ;
         this.body = new square(intialPosition,[1,0] );
 
         /*  foot hitBox */
@@ -554,6 +554,10 @@ class hero {
         this.hasStarted = false ;
         this.isDead = false ; // for game over
         this.haveFinished = false ;
+
+        /*  For hero death animation */
+
+        this.deathParticule = [] ;
         
     }
 
@@ -636,10 +640,13 @@ class hero {
             On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. xJump and zJump are fixed too
             */
 
+        
         let previousFoot = [] ;
         this.foot.forEach(foot => {
             previousFoot.push([foot.vertices[0].copy(), foot.vertices[1].copy()]) ;
         })
+        console.log(previousFoot)
+
             // save previous foot to verify if the hero land (see method footContactWithRoof)
 
         let dt = 1/drawingInstance.fps ;
@@ -675,8 +682,10 @@ class hero {
                     if (element instanceof platform) {
                         if (!this.body.sat(element.platform)) {
                             nbContact ++ ;
+                            console.log("toto")
                             if (this.footContactWithRoof(previousFoot,element)) {
                                 floorContactCoordinate.push(element.platform.center) ;
+                                console.log("totoouf")
                             } else {
                                 this.isDead = true ;
                             }                        }
@@ -687,7 +696,6 @@ class hero {
                         }
                     } else if (element instanceof ending) {
                         if (!this.body.sat(element.ending)) {
-                            nbContact ++ ;
                             this.haveFinished = true ;
                         }
                     }
@@ -695,12 +703,12 @@ class hero {
             }
         })
 
-        if (this.body.center.y < 0.5) {
+        if (this.body.center.y < 0) {
             /*  The lower set of roof have coordinate 1, if the square fall under it, it means that it falls in a hole */
             this.isDead = true ;
         }
 
-        if (!this.isDead && !this.haveFinished) {
+        if (!this.isDead) {
             if (nbContact > 0) {
                 let newCenter = new point(this.body.center.x, floorContactCoordinate[0].y+1) ;
                 let translateVector = new vector(this.body.center, newCenter) ;
@@ -731,6 +739,16 @@ class hero {
         }
     }
 
+    setDeathParticule() {
+        for (let k = 0; k < 40; k++) {
+            this.deathParticule.push(
+                {
+                    position: this.body.center.copy(),
+                    angle: 2*Math.PI*Math.random(),
+                    maxProjection: 2*Math.random(),
+                }) ;
+        }
+    }
 }
 
     /*  Grid elements : 
@@ -872,8 +890,10 @@ class drawing {
         this.height = this.width/3 ;
         this.unity = this.width/40;
         this.fps = 60 ;
-        this.heroCenterXPosition = 0 ; // use to make the grid move with the hero on x. update in method setGridPosition
-        this.heroAjustYPosition = 0 ;  // use to make the grid move with the hero on y. update in method setGridPosition
+        this.heroCenterXPosition = 0 ; // use to make the grid scroll with the hero on x. update in method setGridPosition
+        this.heroAjustYPosition = 0 ;  // use to make the grid scrill with the hero on y. update in method setGridPosition
+        this.deathAnimationTime = 0.3;
+        this.winAnimationTime = 2 ;
 
     }
 
@@ -886,8 +906,8 @@ class drawing {
         /*  ajust position view of the grid in order it always follow the hero. It update heroCenterXPosition 
             and heroAjustYPosition which have to be added to coordinate of elements to be plot*/
         this.heroCenterXPosition = heroInstance.body.center.x - 4 ;
-        if (heroInstance.body.center.y + this.heroAjustYPosition < 1.5) {
-            this.heroAjustYPosition = Math.min(1.5 - heroInstance.body.center.y,0) ;
+        if (heroInstance.body.center.y + this.heroAjustYPosition < 3) {
+            this.heroAjustYPosition = Math.min(3 - heroInstance.body.center.y,0) ;
         } else if (this.height/this.unity - heroInstance.body.center.y - this.heroAjustYPosition < 2) {
             this.heroAjustYPosition = this.height/this.unity - heroInstance.body.center.y - 2
         }
@@ -927,8 +947,25 @@ class drawing {
         /*this.ctx.stroke(heroFoot) ;*/
     }
 
+    deathAnimation(heroInstance) {
+        let nbFrame = this.deathAnimationTime * this.fps ;
+        let translationVector ;
+        let explosion = new Path2D() ;
+
+        heroInstance.deathParticule.forEach(particule => {
+            translationVector = new vector(Math.cos(particule.angle), Math.sin(particule.angle))
+            translationVector = translationVector.product(particule.maxProjection/nbFrame) ;
+            particule.position.translate(translationVector)
+            explosion.arc(this.gridAbscissa(particule.position.x - this.heroCenterXPosition), this.gridOrdinate(particule.position.y + this.heroAjustYPosition), 2, 0, 2 * Math.PI);
+            explosion.closePath() ;
+        })
+
+        this.ctx.fillStyle = "brown" ;
+        this.ctx.fill(explosion);
+        
+    }
+
     drawGrid(gridInstance, heroInstance) {
-        //console.log(Math.min(this.height/this.unity- heroInstance.body.center.y - 4, 0))
         let minColToKeep = Math.floor(Math.max(this.heroCenterXPosition, 0));
         let maxColToKeep = Math.floor(heroInstance.body.center.x+40)
 
@@ -962,127 +999,143 @@ class drawing {
 }
 
 
-// main
+    /*  Game progress 
+    
+        Gather function which gover the game progress. It is not organize in classes because recursivity seems not work 
+        in method, and recursivity is essential for timeout use
+    */
 
-const canvasGame = document.getElementById("canvas");
-const ctx = canvasGame.getContext("2d");
+        // Level construction
 
-const drawingInstance = new drawing();
-let heroInstance = new hero();
-
-const keys = {};
-
-const gridInstance = new grid() ;
-gridInstance.defaultGrid(100) ;
-//let peak1 ;
-
-/*for (let k = 4; k < 200; k = k+4) {
-    peak1 = new peak(k,8,"down") ;
-    gridInstance.addPeak(peak1) ;
-}*/
-
-let a = -(2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))**2)/2 ;
-let b = (2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))) ;
-let delta = b**2+4*a ;
-let exaliterSpace = (-b - Math.sqrt(delta))/(2*a) * heroInstance.vx ;
+function level1(gridInstance, heroInstance) {
+    gridInstance.defaultGrid(100) ;
 
 
-let platform1 ;
-for (let k = 0; k < 15 ; k++) {
-    platform1 = new platform(15+k*exaliterSpace, k+3/2) ;
-    gridInstance.addPlatform(platform1) ;
+    let a = -(2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))**2)/2 ;
+    let b = (2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))) ;
+    let delta = b**2+4*a ;
+    let exaliterSpace = (-b - Math.sqrt(delta))/(2*a) * heroInstance.vx ;
+    
+    
+    let platform1 ;
+    for (let k = 0; k < 10 ; k++) {
+        platform1 = new platform(10+k + exaliterSpace, 15+3/2) ;
+        gridInstance.addPlatform(platform1) ;
+    }
+    
+    /*for (let k = 15; k < 20; k++) {
+        platform1 = new platform(15+ k-14 + 14*exaliterSpace, 15+3/2) ;
+        gridInstance.addPlatform(platform1) ;
+    }
+    
+    platform1 = new platform(15+ 20-14 + 14*exaliterSpace, 15+3/2) ;
+    gridInstance.addPlatform(platform1) ;*/
+    
+    
+    let endingInstance = new ending(90)
+    gridInstance.addEnding(endingInstance)
+
 }
 
-let endingInstance = new ending(90)
-gridInstance.addEnding(endingInstance)
+function restart() {
+    heroInstance = new hero() ;
+    drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
+    drawingInstance.setGridPosition(heroInstance) ;
+    drawingInstance.drawHero(heroInstance) ;
+    drawingInstance.drawGrid(gridInstance, heroInstance) ;  
+    cptBeforePossibleJump = 0 ;  
+    cptDeath = 0 ;
+    cptWin = 0 ;
+}
 
-drawingInstance.setGridDimension() ;
-drawingInstance.setGridPosition(heroInstance) ;
-drawingInstance.drawHero(heroInstance) ;
-drawingInstance.drawGrid(gridInstance, heroInstance) ;
+function deathFinish() {
+    drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height)
+    drawingInstance.setGridPosition(heroInstance) ;
+    drawingInstance.drawGrid(gridInstance, heroInstance) ;
+    drawingInstance.deathAnimation(heroInstance) ;
+    if (cptDeath < drawingInstance.deathAnimationTime * drawingInstance.fps) {
+        cptDeath ++ ;
+        setTimeout(deathFinish, 1/drawingInstance.fps * 1000);
+    } else {    
+        restart() ;
+    }
+}
 
-let cpt = 0
-let stepTimeout = 0 ;
-function moveAfterJump() {
-    console.log(heroInstance.isDead)
+function winFinish() {
+    heroInstance.move(drawingInstance, gridInstance) ;
+    drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height)
+    drawingInstance.setGridPosition(heroInstance) ;
+    drawingInstance.drawHero(heroInstance) ;
+    drawingInstance.drawGrid(gridInstance, heroInstance) ;
+    cptBeforePossibleJump++ ;
+    if (cptWin < drawingInstance.winAnimationTime * drawingInstance.fps) {
+        cptWin ++ ;
+        heroInstance.vx *= 0.98 ;
+        heroInstance.vy0 *= 0.98 ;
+        setTimeout(winFinish, 1/drawingInstance.fps * 1000);
+    } else {    
+        restart() ;
+    }
+}
+
+function game() {
     if (!heroInstance.isDead && !heroInstance.haveFinished) {
-        if(keys.Space && cpt > 30) {
-            jump() ;
+        if(keys.Space && cptBeforePossibleJump > 30) {
+            heroInstance.jump() ;
         }
         heroInstance.move(drawingInstance, gridInstance) ;
-        drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height)
+        drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
         drawingInstance.setGridPosition(heroInstance) ;
         drawingInstance.drawHero(heroInstance) ;
         drawingInstance.drawGrid(gridInstance, heroInstance) ;
-        cpt ++;
-        stepTimeout = setTimeout(moveAfterJump, 1/drawingInstance.fps * 1000);
+        //setTimeout(game, 1/drawingInstance.fps * 1000);
+        cptBeforePossibleJump++ ;
     } else {
         if (heroInstance.isDead) {
-            window.alert("MORT")
+            heroInstance.setDeathParticule() ;    
+            deathFinish() ;
         } else {
-            window.alert("GAGNE")
+            winFinish()        
         }
-        heroInstance = new hero()
-        drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height)
-        drawingInstance.setGridPosition(heroInstance) ;
-        drawingInstance.drawHero(heroInstance) ;
-        drawingInstance.drawGrid(gridInstance, heroInstance) ;
-        titi = Date.now() ;
-        console.log(titi - toto)
-        cpt = 0 ;
+
     }
 
-}
-
-function move() {
-    moveAfterJump();
-}
-
-function print() {
-    console.log(heroInstance)
-}
-
-function jump() {
-    heroInstance.jump() ;
 }
 
 function keyEventHandler(event){
     if (!heroInstance.hasStarted) {
         heroInstance.hasStarted = true ;
         toto = Date.now() ;
-        move()
+        game()
     }
     keys[event.code] = event.type === "keydown";
     event.preventDefault();
 }
+
+
+
+
+// main
+
+
+let canvasGame = document.getElementById("canvas");
+let ctx = canvasGame.getContext("2d");
+const keys = {};
+
+const drawingInstance = new drawing();
+let heroInstance = new hero();
+
+let gridInstance = new grid() ;
+level1(gridInstance, heroInstance) ;
+
+let cptBeforePossibleJump = 0 ;
+let cptDeath = 0 ;
+let cptWin = 0 ;
+
+drawingInstance.setGridDimension() ;
+restart() ;
+
 window.addEventListener("keydown",keyEventHandler);
 window.addEventListener("keyup",keyEventHandler);
-
-
-
-/*toto = new hero() ;
-
-console.log(toto.body) ;
-console.log(toto.foot[0]) ;
-console.log(toto.foot[1]) ;
-
-toto.rotate(Math.PI/4) ;
-console.log(toto.body) ;
-console.log(toto.foot[0]) ;
-console.log(toto.foot[1]) ;
-
-titi = new platform(3,3) ;
-console.log(titi.platform.vertices)
-console.log(titi.roof.vertices)
-*/
-
-/*toto = new grid() ;
-toto.defaultGrid(10) ;
-console.log(toto.grid[3][0])*/
-
-
-
-
-
 
 
