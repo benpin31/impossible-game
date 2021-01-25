@@ -231,6 +231,12 @@ class polygon {
         this.vertices = vertices ;
     }
 
+    copy() {
+        let newPolygon = new polygon([]) ;
+        this.vertices.forEach(point => {newPolygon.push(point.copy())})
+        return newPolygon ;
+    }
+
     translate(translationVector) {
         /*  tranlaction of the polygon of vector v. Methods don't return new polygon, but modify directly the attributes*/
         this.vertices.forEach(point => {
@@ -424,9 +430,16 @@ class square extends polygon {
             point3.translate(translationVector) ;
             point4.translate(translationVector) ;
         }
-        super([point1, point2, point3, point4], [[0,2], [1,3]])
+        super([point1, point2, point3, point4])
         this.center = center ;
         this.polarDirection = polarDirection ;
+    }
+
+    copy() {
+        let newSquare = new square([this.vertices[0].copy(), this.vertices[0].copy()]) ;
+        newSquare.center = this.center.copy() ;
+        newSquare.polarDirection = this.polarDirection.slice() ;
+        return newSquare ;
     }
 
     rotate(angle) {
@@ -460,13 +473,11 @@ class square extends polygon {
         // indicate the index of the point(s) of minimal ordinates of the the square. If two points, we return
         // first the point with lowest abscissa.    
         let lowestPoint = new point(Infinity, Infinity) ;
-        let lowestPointIndex = null ;
 
         for (let k = 0; k < this.vertices.length; k++) {
             if (keepNDec(this.vertices[k].y,6) < keepNDec(lowestPoint.y,6)) {
                 // comparision are mad with 6 decimal to avoid precision error of java script
                 lowestPoint = this.vertices[k] ;
-                lowestPointIndex = k;
             }
         }
 
@@ -503,23 +514,32 @@ class square extends polygon {
 
 class hero {
     
-    constructor() {
+    constructor(positionCenter, positionPolarCoordinates,
+        vx, vy0, xJump, yJump, g, t, isJumping) {
         /*  a hero is the set of a body which is a square, and foot which will be usefull to test if the hero land
             on a block (the foot touch the roof of the block) or not. Soot is and array of segments declared a 
             polygon to apply them sat algorithm. If the square is horizontal, the array contains only one segment : the 
             lowest, else it contains two segments : those around the lowest point */
 
         /*  Body hitBox */
-        let intialPosition = new point(6+1/2, 5+1/2) ;
-        this.body = new square(intialPosition,[1,0] );
+        let intialPosition = new point(positionCenter[0], positionCenter[1]) ;
+        this.body = new square(intialPosition,positionPolarCoordinates.slice() );
 
         /*  foot hitBox */
         let footPoint = this.body.getLowestPointIndex()
-            // the default body have angle 0, so footpoint return always 2 points
-        let footPoint1 = this.body.vertices[footPoint[0]].copy() ;
-        let footPoint2 = this.body.vertices[footPoint[1]].copy() ;
-        let foot1 = new polygon([footPoint1,footPoint2]);
-        this.foot = [foot1]
+        if (footPoint.length == 2) {
+            let footPoint1 = this.body.vertices[footPoint[0]].copy() ;
+            let footPoint2 = this.body.vertices[footPoint[1]].copy() ;
+            let foot1 = new polygon([footPoint1,footPoint2]);
+            this.foot = [foot1]
+        } else {
+            let footPoint1 = this.body.vertices[footPoint[0]].copy() ;
+            let footPoint2 = this.body.vertices[positivMod(footPoint[0]+1,4)].copy() ;
+            let footPoint3 = this.body.vertices[positivMod(footPoint[0]-1,4)].copy() ;
+            let foot1 = new polygon([footPoint1, footPoint2]) ;
+            let foot2 = new polygon([footPoint1.copy(), footPoint3]) ;
+            this.foot = [foot1, foot2] ;
+        } 
 
         /*  Physical attributes 
             Those parameters are computed in order the hero do a jump of 4 unity heigh and 3 unity long. 
@@ -539,13 +559,13 @@ class hero {
             xJump and zJump are fixed too
         */
 
-        this.vx = 12 ; // horizontal speed of the hero
-        this.vy0 = 0 ; // vertical speed. when jump :  (2*this.zJump)/((this.xJump/(2*this.vx))
-        this.xJump = 4 ; // length of a jump
-        this.yJump = 3 ; // height of a jump
-        this.g = 0 ; // gravitional constant. value when jump or fall from a platform : (2*this.zJump)/((this.xJump/(2*this.vx))**2) ;
-        this.t = 0 ; // counter of time when the hero begin jumping or falling in order to use equation. must be 0 at the begning of a jump or fall
-        this.isJumping = false ; 
+        this.vx = vx ; // horizontal speed of the hero
+        this.vy0 = vy0 ; // vertical speed. when jump :  (2*this.zJump)/((this.xJump/(2*this.vx))
+        this.xJump = xJump ; // length of a jump
+        this.yJump = yJump ; // height of a jump
+        this.g = g ; // gravitional constant. value when jump or fall from a platform : (2*this.zJump)/((this.xJump/(2*this.vx))**2) ;
+        this.t = t ; // counter of time when the hero begin jumping or falling in order to use equation. must be 0 at the begning of a jump or fall
+        this.isJumping = isJumping ; 
             // use to avoid the gamer to do multiple jump, when jump, it become true and become false only when the hero land 
     
         /*  hero status */
@@ -804,7 +824,7 @@ class peak {
         of the hero to test collisions*/
     constructor(x, y, orientation) {
         /* x, y are the coordinates of the lowest leftest point of the square in which the triangle is inscribed */
-        let point1, point2, point3, center ;
+        let point1, point2, point3 ;
         switch(orientation) {
             case 'up' :
                 point1 = new point(x, y) ;
@@ -847,6 +867,16 @@ class ending {
     }
 }
 
+class checkPoint {
+    constructor(heroInstance) {
+        console.log("je suis un connard !!!!!")
+        this.x = heroInstance.body.center.x ;
+        console.log(heroInstance.body.center.x)
+        this.y = heroInstance.body.center.y ;
+        this.col = Math.floor(this.x) ;
+    }
+}
+
 class grid {
     /*  grid is a discretisation of the level. All element have a col value which is the floor of there x-position.
          Those element will be organized on the grid which is an array. In array cell n, we will place all element
@@ -881,6 +911,14 @@ class grid {
             this.grid[endingInstance.col].push(endingInstance) ;
         } else {
             this.grid[endingInstance.col] = [endingInstance] ;
+        }
+    }
+
+    addCheckPoint(checkPointInstance) {
+        if (this.grid[checkPointInstance.col] != undefined) {
+            this.grid[checkPointInstance.col].push(checkPointInstance) ;
+        } else {
+            this.grid[checkPointInstance.col] = [checkPointInstance] ;
         }
     }
 
@@ -953,9 +991,9 @@ class drawing {
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[2].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[2].y + this.heroAjustYPosition));
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[3].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[3].y + this.heroAjustYPosition));
         heroBody.closePath();
-        this.ctx.shadowColor = "rgba(13,213,252)";
+        this.ctx.shadowColor = "rgba(159,76,147)";
         this.ctx.shadowBlur = 10;
-        this.ctx.strokeStyle = "rgba(13,213,252,0.5)" ;
+        this.ctx.strokeStyle = "rgba(159,76,147,0.5)" ;
         this.ctx.lineWidth=6;
         this.ctx.stroke(heroBody) ;
         this.ctx.lineWidth=4.5;
@@ -999,7 +1037,9 @@ class drawing {
         let maxColToKeep = Math.floor(heroInstance.body.center.x+40)
 
         let platformDraw = new Path2D() ;
-        let peakDraw = new Path2D() ;
+        let peakDraw = new Path2D()  ;
+        let checkPointDraw = new Path2D() ;
+        let endingDraw = new Path2D() ;
 
         gridInstance.grid.slice(minColToKeep, maxColToKeep).forEach(gridRow => {
             if(gridRow != undefined) {
@@ -1013,6 +1053,32 @@ class drawing {
                         peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[1].x - this.heroCenterXPosition), this.gridOrdinate(element.peak.vertices[1].y + this.heroAjustYPosition)) ;
                         peakDraw.lineTo(this.gridAbscissa(element.peak.vertices[2].x - this.heroCenterXPosition), this.gridOrdinate(element.peak.vertices[2].y + this.heroAjustYPosition)) ;
                         peakDraw.closePath() ;
+                    } else if (element instanceof checkPoint) {
+                        checkPointDraw.moveTo(this.gridAbscissa(element.x - this.heroCenterXPosition), this.gridOrdinate(element.y + this.heroAjustYPosition));
+                        checkPointDraw.lineTo(this.gridAbscissa(element.x - this.heroCenterXPosition), this.gridOrdinate(element.y+2 + this.heroAjustYPosition));
+                        checkPointDraw.lineTo(this.gridAbscissa(element.x+1 - this.heroCenterXPosition), this.gridOrdinate(element.y+3/2 + this.heroAjustYPosition));
+                        checkPointDraw.lineTo(this.gridAbscissa(element.x - this.heroCenterXPosition), this.gridOrdinate(element.y+1 + this.heroAjustYPosition));
+                        checkPointDraw.closePath();                
+                    } else if (element instanceof ending) {
+                        let endingCoordinate = [this.gridAbscissa(element.col+1/2 - this.heroCenterXPosition),
+                        this.gridOrdinate(15 + this.heroAjustYPosition)]
+                        endingDraw.moveTo(this.gridAbscissa(element.col-1/2 - this.heroCenterXPosition), this.gridOrdinate(14 + this.heroAjustYPosition))
+                        endingDraw.lineTo(this.gridAbscissa(element.col+3/2 - this.heroCenterXPosition), this.gridOrdinate(14 + this.heroAjustYPosition))
+                        endingDraw.lineTo(this.gridAbscissa(element.col+1 - this.heroCenterXPosition), this.gridOrdinate(6 + this.heroAjustYPosition))
+                        endingDraw.lineTo(this.gridAbscissa(element.col+3/2 - this.heroCenterXPosition), this.gridOrdinate(6 + this.heroAjustYPosition))
+                        endingDraw.lineTo(this.gridAbscissa(element.col+1/2 - this.heroCenterXPosition), this.gridOrdinate(5 + this.heroAjustYPosition))
+                        endingDraw.lineTo(this.gridAbscissa(element.col-1/2 - this.heroCenterXPosition), this.gridOrdinate(6 + this.heroAjustYPosition))
+                        endingDraw.lineTo(this.gridAbscissa(element.col - this.heroCenterXPosition), this.gridOrdinate(6 + this.heroAjustYPosition))
+                        endingDraw.lineTo(this.gridAbscissa(element.col-1/2 - this.heroCenterXPosition), this.gridOrdinate(14 + this.heroAjustYPosition))
+                        checkPointDraw.closePath();     
+                        
+                        this.ctx.shadowColor = "rgba(57, 255, 20)"
+                        this.ctx.fillStyle = "rgba(57, 255, 20,1)" ;
+                        this.ctx.textAlign = "center";
+                        this.ctx.font = "80px calibri";
+                        this.ctx.shadowBlur = 20;
+                        this.ctx.fillText("GAME OVER", endingCoordinate[0], endingCoordinate[1]);
+                
                     }
                 })
             }
@@ -1039,7 +1105,26 @@ class drawing {
         this.ctx.stroke(platformDraw) ;
         this.ctx.lineWidth=1.5;
         this.ctx.stroke(platformDraw) ;
-        this.ctx.shadowBlur = 0;
+
+        this.ctx.shadowColor = "rgba(57, 255, 20)";
+        this.ctx.shadowBlur = 20;
+        this.ctx.strokeStyle = "rgba(57, 255, 20,1)" ;
+        this.ctx.lineWidth=4.5;
+        this.ctx.stroke(checkPointDraw) ;
+        this.ctx.lineWidth=3;
+        this.ctx.stroke(checkPointDraw) ;
+        this.ctx.lineWidth=1.5;
+        this.ctx.stroke(checkPointDraw) ;
+
+        this.ctx.shadowColor = "rgba(57, 255, 20)";
+        this.ctx.shadowBlur = 20;
+        this.ctx.strokeStyle = "rgba(57, 255, 20,1)" ;
+        this.ctx.lineWidth=4.5;
+        this.ctx.stroke(endingDraw) ;
+        this.ctx.lineWidth=3;
+        this.ctx.stroke(endingDraw) ;
+        this.ctx.lineWidth=1.5;
+        this.ctx.stroke(endingDraw) ;
 
     }
 }
@@ -1062,18 +1147,28 @@ function level1(gridInstance, heroInstance) {
     let delta = b**2+4*a ;
     let exaliterSpace = (-b - Math.sqrt(delta))/(2*a) * heroInstance.vx ;
     
+    let peakInstance = new peak(40,5, "up") ;
+    gridInstance.addPeak(peakInstance) ;    
+     peakInstance = new peak(41,5, "up") ;
+    gridInstance.addPeak(peakInstance) ;    
+     /*peakInstance = new peak(42,5, "up") ;
+    gridInstance.addPeak(peakInstance) ;    
+     peakInstance = new peak(43,5, "up") ;
+    gridInstance.addPeak(peakInstance) ;*/
+
     let endingInstance = new ending(90)
     gridInstance.addEnding(endingInstance)
 
 }
 
-function restart() {
-    heroInstance = new hero() ;
+function restart(parameters) {
+    heroInstance = new hero(parameters[0], parameters[1],
+        parameters[2], parameters[3], parameters[4],
+        parameters[5], parameters[6],parameters[7], parameters[8]);
     drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
     drawingInstance.setGridPosition(heroInstance) ;
     drawingInstance.drawHero(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;  
-    cptBeforePossibleJump = 0 ;  
 }
 
 function deathFinish() {
@@ -1083,8 +1178,19 @@ function deathFinish() {
     drawingInstance.deathAnimation(heroInstance) ;
     if (Date.now() - frameTimeDiff.endingBegin < drawingInstance.deathAnimationTime*1000) {
         requestAnimationFrame(deathFinish);
-    } else {    
-        restart() ;
+    } else {   
+        if (checkPointCounter > 0) {
+            restart(gameParameters.saved) ;
+            heroInstance.isDead = false ;
+            heroInstance.hasStarted = true ;
+            heroInstance.havefinished = false ;
+            frameTimeDiff.lastTime = Date.now() ;
+            game() ;
+        } else {
+            frameTimeDiff.startBegin = Date.now() ;
+            level1(gridInstance, heroInstance) ;
+            restart(gameParameters.initial) ;
+        }
     }
 }
 
@@ -1094,57 +1200,80 @@ function winFinish() {
     drawingInstance.setGridPosition(heroInstance) ;
     drawingInstance.drawHero(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;
-    cptBeforePossibleJump++ ;
     if (Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1000) {
         heroInstance.vx *= 0.98 ;
         heroInstance.vy0 *= 0.98 ;
         requestAnimationFrame(winFinish);
     } else {    
-        restart() ;
+        frameTimeDiff.startBegin = Date.now() ;
+        level1(gridInstance, heroInstance) ;
+        restart(gameParameters.initial) ;
     }
 }
 
 function game() {
-    console.log(frameTimeDiff.lastTime)
 
     frameTimeDiff.dt = (Date.now() - frameTimeDiff.lastTime)/1000 ;
     frameTimeDiff.lastTime = Date.now() ;
 
-    console.log(frameTimeDiff.lastTime)
-    console.log(frameTimeDiff.dt)
-
-        if (!heroInstance.isDead && !heroInstance.haveFinished) {
-            if(keys.Space && (Date.now() - frameTimeDiff.startBegin > 500)) {
-                heroInstance.jump() ;
-            }
-            heroInstance.move(gridInstance) ;
-            drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
-            drawingInstance.setGridPosition(heroInstance) ;
-            drawingInstance.drawHero(heroInstance) ;
-            drawingInstance.drawGrid(gridInstance, heroInstance) ;
-            requestAnimationFrame(game);
-        } else {
-            frameTimeDiff.endingBegin = Date.now()
-            if (heroInstance.isDead) {
-                heroInstance.setDeathParticule() ;    
-                deathFinish() ;
-            } else {
-                winFinish()        
-            }
-    
+    if (!heroInstance.isDead && !heroInstance.haveFinished) {
+        if(keys.Space && (Date.now() - frameTimeDiff.startBegin > 500)) {
+            heroInstance.jump() ;
         }
+        if(keys.KeyS && (Date.now() - frameTimeDiff.lastCheckPoint > 200)) {
+            addCheckPoint() 
+            checkPointCounter++ ;
+            let checkPointInstance = new checkPoint(heroInstance) ;
+            gridInstance.addCheckPoint(checkPointInstance) ;
+            frameTimeDiff.lastCheckPoint = Date.now()
+        }
+        heroInstance.move(gridInstance) ;
+        drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
+        drawingInstance.setGridPosition(heroInstance) ;
+        drawingInstance.drawHero(heroInstance) ;
+        drawingInstance.drawGrid(gridInstance, heroInstance) ;
+        requestAnimationFrame(game);
+    } else {
+        frameTimeDiff.endingBegin = Date.now() ;
+        if (heroInstance.isDead) {
+            heroInstance.setDeathParticule() ;    
+            deathFinish() ;
+        } else {
+            winFinish()   
+        }
+
+    }
+}
+
+function addCheckPoint() {
+    gameParameters.saved = [
+        [heroInstance.body.center.x, heroInstance.body.center.y],
+        heroInstance.body.polarDirection.slice(),
+        heroInstance.vx, 
+        heroInstance.vy0,
+        heroInstance.xJump,
+        heroInstance.yJump,
+        heroInstance.g,
+        heroInstance.t,
+        heroInstance.isJumping
+    ] ;
 }
 
 function keyEventHandler(event){
     keys[event.code] = event.type === "keydown";
+    console.log(keys)
     event.preventDefault();
     if (!heroInstance.hasStarted && keys.Space) {
         heroInstance.hasStarted = true ;
+        checkPointCounter = 0 ;
+        gameParameters.saved = [gameParameters.initial[0].slice(), gameParameters.initial[1].slice(),  gameParameters.initial.slice(2)]
         frameTimeDiff.lastTime = Date.now() ;
         frameTimeDiff.startBegin = Date.now() ;
         game() ;
     }
 }
+
+
 
 
 // main
@@ -1157,17 +1286,23 @@ let ctx = canvasGame.getContext("2d");
 const keys = {};
 
 const drawingInstance = new drawing();
-let heroInstance = new hero();
+const frameTimeDiff = {lastTime: 0, dt:0, startBegin: 0,endingBegin: 0, lastCheckPoint : 0} ;
+
+const gameParameters = {initial:[[6,6], [1,0], 12, 0, 4, 3, 0, 0, false]}
+let checkPointCounter = 0 ;
+
+
+let heroInstance = new hero(gameParameters.initial[0], gameParameters.initial[1],
+    gameParameters.initial[2], gameParameters.initial[3], gameParameters.initial[4],
+    gameParameters.initial[5], gameParameters.initial[6],gameParameters.initial[7], gameParameters.initial[8]);
 
 let gridInstance = new grid() ;
 level1(gridInstance, heroInstance) ;
 
-const frameTimeDiff = {lastTime: 0, dt:0, startBegin: 0,endingBegin: 0} ;
-
-
-
 drawingInstance.setGridDimension() ;
-restart() ;
+restart(gameParameters.initial) ;
+
+
 
 window.addEventListener("keydown",keyEventHandler);
 window.addEventListener("keyup",keyEventHandler);
