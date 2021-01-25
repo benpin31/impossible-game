@@ -510,7 +510,7 @@ class hero {
             lowest, else it contains two segments : those around the lowest point */
 
         /*  Body hitBox */
-        let intialPosition = new point(17+3/2, 15+3/2) ;
+        let intialPosition = new point(6+1/2, 5+1/2) ;
         this.body = new square(intialPosition,[1,0] );
 
         /*  foot hitBox */
@@ -895,7 +895,7 @@ class grid {
         /* create a default frid with a default ground of platform on first row. */
         this.grid = [] ;
         let platformInstance ;
-        for (let k = 0 ; k < size ; k++) {
+        for (let k = 4 ; k < size ; k++) {
             platformInstance = new platform(k+1/2,4+1/2) ;
             this.addPlatform(platformInstance) ;
         }
@@ -926,7 +926,7 @@ class drawing {
     setGridPosition(heroInstance) {
         /*  ajust position view of the grid in order it always follow the hero. It update heroCenterXPosition 
             and heroAjustYPosition which have to be added to coordinate of elements to be plot*/
-        this.heroCenterXPosition = heroInstance.body.center.x - 4 ;
+        this.heroCenterXPosition = heroInstance.body.center.x - 10 ;
         if (heroInstance.body.center.y + this.heroAjustYPosition < 3) {
             this.heroAjustYPosition = Math.min(3 - heroInstance.body.center.y,0) ;
         } else if (this.height/this.unity - heroInstance.body.center.y - this.heroAjustYPosition < 2) {
@@ -1062,43 +1062,8 @@ function level1(gridInstance, heroInstance) {
     let delta = b**2+4*a ;
     let exaliterSpace = (-b - Math.sqrt(delta))/(2*a) * heroInstance.vx ;
     
-    
-    for (let m = 15; m > 0; m = m-1) {
-        for (let l = m; l < m+1; l++) {
-            for (let k =(15-m) *8; k <(15-m) *8 +15  ; k++) {
-                platform1 = new platform(10+k + exaliterSpace, 19-l+3/2) ;
-                gridInstance.addPlatform(platform1) ;
-            }
-        }
-    }
-
-    let peak1 = new peak(24.5+exaliterSpace, 16, "up") ;
-    gridInstance.addPeak(peak1) ;
-
-    let endingInstance = new ending(50) ;
-    gridInstance.addEnding(endingInstance) ;
-
-
-
-    /*for (let k = 7; k < 13 ; k++) {
-        platform1 = new peak(10+k-1/2 + exaliterSpace, 15+1.2, 'up') ;
-        gridInstance.addPeak(platform1) ;
-    }*/
-
-        //gridInstance.removeCol(14,28)
-
-
-    /*for (let k = 15; k < 20; k++) {
-        platform1 = new platform(15+ k-14 + 14*exaliterSpace, 15+3/2) ;
-        gridInstance.addPlatform(platform1) ;
-    }
-    
-    platform1 = new platform(15+ 20-14 + 14*exaliterSpace, 15+3/2) ;
-    gridInstance.addPlatform(platform1) ;*/
-    
-    
-    //let endingInstance = new ending(90)
-    //gridInstance.addEnding(endingInstance)
+    let endingInstance = new ending(90)
+    gridInstance.addEnding(endingInstance)
 
 }
 
