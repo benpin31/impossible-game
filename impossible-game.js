@@ -501,7 +501,6 @@ class square extends polygon {
 
     /* hero */
 
-
 class hero {
     
     constructor() {
@@ -511,7 +510,7 @@ class hero {
             lowest, else it contains two segments : those around the lowest point */
 
         /*  Body hitBox */
-        let intialPosition = new point(15+3/2, 16+3/2) ;
+        let intialPosition = new point(17+3/2, 15+3/2) ;
         this.body = new square(intialPosition,[1,0] );
 
         /*  foot hitBox */
@@ -540,7 +539,7 @@ class hero {
             xJump and zJump are fixed too
         */
 
-        this.vx = 10 ; // horizontal speed of the hero
+        this.vx = 12 ; // horizontal speed of the hero
         this.vy0 = 0 ; // vertical speed. when jump :  (2*this.zJump)/((this.xJump/(2*this.vx))
         this.xJump = 4 ; // length of a jump
         this.yJump = 3 ; // height of a jump
@@ -622,7 +621,7 @@ class hero {
         return cpt > 0 ;
     }
 
-    move(drawingInstance, gridInstance) {
+    move(gridInstance) {
         /*  The gravity center of the hero follow the next trajectory (with t=0 as begning of a jump)
                 x(t) = vx * t
                 y(t) = -1/2*g*t^2 + vy0 * t + y0
@@ -648,8 +647,8 @@ class hero {
 
             // save previous foot to verify if the hero land (see method footContactWithRoof)
 
-        let dt = 1/drawingInstance.fps ;
-            // time interval computed according to the game fps
+        let dt = frameTimeDiff.dt
+            // time interval between to frames
 
         let translationVector = new vector(this.vx * dt, -1/2*this.g * dt * (2*this.t+dt) + this.vy0 * dt ) ;
         this.translate(translationVector) ;
@@ -674,33 +673,6 @@ class hero {
             // and this way, we can corrEct y position of the hero
 
         let aroundGrid = gridInstance.grid.slice(Math.max(Math.floor(this.body.center.x-1),0), Math.floor(this.body.center.x+2)) ;
-        // neighbour elements grid of the hero
-        /*aroundGrid.forEach(col => {
-            if (col != undefined) {
-                col.forEach(element => {
-                    if (element instanceof platform) {
-                        if (!this.body.sat(element.platform)) {
-                            nbContact ++ ;
-                            console.log("toto")
-                            if (this.footContactWithRoof(previousFoot,element)) {
-                                floorContactCoordinate.push(element.platform.center) ;
-                                console.log("totoouf")
-                            } else {
-                                this.isDead = true ;
-                            }                        }
-                    } else if (element instanceof peak) {
-                        if (!this.body.sat(element.peak)) {
-                            nbContact ++ ;
-                            this.isDead = true ;
-                        }
-                    } else if (element instanceof ending) {
-                        if (!this.body.sat(element.ending)) {
-                            this.haveFinished = true ;
-                        }
-                    }
-                })
-            }
-        })*/
 
         aroundGrid.forEach(col => {
             if (col != undefined) {
@@ -724,9 +696,6 @@ class hero {
                 })
             }
         })
-
-        console.log(deadContactElementCenter) ;
-        console.log(floorContactElementCenter) ;
 
         let maxDeadContactCenter, maxFloorContactCenter ;
 
@@ -774,7 +743,7 @@ class hero {
                 this.isJumping = false ; // the gamer can jump
             } else {
                 this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // no compensation by newton 3rd law
-                this.rotate(-Math.PI/(drawingInstance.fps * this.xJump/(2*this.vx))) ; // to look pretty : the hero rotate when not on a roof
+                this.rotate(-Math.PI/(1/frameTimeDiff.dt * this.xJump/(2*this.vx))) ; // to look pretty : the hero rotate when not on a roof
                 this.isJumping = true ; // can't jump before the end of the jump /fall
             }
         }
@@ -927,7 +896,7 @@ class grid {
         this.grid = [] ;
         let platformInstance ;
         for (let k = 0 ; k < size ; k++) {
-            platformInstance = new platform(k+1/2,1/2) ;
+            platformInstance = new platform(k+1/2,4+1/2) ;
             this.addPlatform(platformInstance) ;
         }
     }
@@ -940,9 +909,8 @@ class drawing {
         let canvas = document.getElementById("canvas");
         this.ctx = canvas.getContext("2d") ;
         this.width = document.getElementById("game-interface").offsetWidth;
-        this.height = this.width/3 ;
+        this.height = document.getElementById("game-interface").offsetHeight ;
         this.unity = this.width/40;
-        this.fps = 60 ;
         this.heroCenterXPosition = 0 ; // use to make the grid scroll with the hero on x. update in method setGridPosition
         this.heroAjustYPosition = 0 ;  // use to make the grid scrill with the hero on y. update in method setGridPosition
         this.deathAnimationTime = 0.3;
@@ -985,36 +953,44 @@ class drawing {
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[2].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[2].y + this.heroAjustYPosition));
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[3].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[3].y + this.heroAjustYPosition));
         heroBody.closePath();
+        this.ctx.shadowColor = "rgba(13,213,252)";
+        this.ctx.shadowBlur = 10;
+        this.ctx.strokeStyle = "rgba(13,213,252,0.5)" ;
+        this.ctx.lineWidth=6;
+        this.ctx.stroke(heroBody) ;
+        this.ctx.lineWidth=4.5;
+        this.ctx.stroke(heroBody) ;
+        this.ctx.lineWidth=3;
+        this.ctx.stroke(heroBody) ;
+        this.ctx.lineWidth=1.5;
+        this.ctx.stroke(heroBody) ;
 
-        /*let heroFoot = new Path2D() ;
-        heroFoot.moveTo(this.gridAbscissa(heroInstance.foot[0].vertices[0].x),this.gridOrdinate(heroInstance.foot[0].vertices[0].y) )
-        heroFoot.lineTo(this.gridAbscissa(heroInstance.foot[0].vertices[1].x),this.gridOrdinate(heroInstance.foot[0].vertices[1].y) )
-        if (heroInstance.foot.length === 2) {
-            heroFoot.moveTo(this.gridAbscissa(heroInstance.foot[1].vertices[0].x),this.gridOrdinate(heroInstance.foot[1].vertices[0].y) )
-            heroFoot.lineTo(this.gridAbscissa(heroInstance.foot[1].vertices[1].x),this.gridOrdinate(heroInstance.foot[1].vertices[1].y) )    
-        } */
-
-        this.ctx.fillStyle = "red" ;
-        /*this.ctx.strokeStyle = "green" ;*/
-        this.ctx.fill(heroBody) ;
-        /*this.ctx.stroke(heroFoot) ;*/
     }
 
     deathAnimation(heroInstance) {
-        let nbFrame = this.deathAnimationTime * this.fps ;
         let translationVector ;
         let explosion = new Path2D() ;
 
         heroInstance.deathParticule.forEach(particule => {
             translationVector = new vector(Math.cos(particule.angle), Math.sin(particule.angle))
-            translationVector = translationVector.product(particule.maxProjection/nbFrame) ;
+            translationVector = translationVector.product(particule.maxProjection/(this.deathAnimationTime/frameTimeDiff.dt)) ;
             particule.position.translate(translationVector)
+            explosion.moveTo(this.gridAbscissa(particule.position.x - this.heroCenterXPosition)+2, this.gridOrdinate(particule.position.y + this.heroAjustYPosition))
             explosion.arc(this.gridAbscissa(particule.position.x - this.heroCenterXPosition), this.gridOrdinate(particule.position.y + this.heroAjustYPosition), 2, 0, 2 * Math.PI);
             explosion.closePath() ;
         })
 
-        this.ctx.fillStyle = "brown" ;
-        this.ctx.fill(explosion);
+        this.ctx.shadowColor = "rgba(243,13,21)";
+        this.ctx.shadowBlur = 50;
+        this.ctx.strokeStyle = "rgba(243,13,21,0.5)" ;
+        this.ctx.lineWidth=3;
+        this.ctx.stroke(explosion) ;
+        this.ctx.lineWidth=2.5;
+        this.ctx.stroke(explosion) ;
+        this.ctx.lineWidth=2;
+        this.ctx.stroke(explosion) ;
+        this.ctx.lineWidth=1.5;
+        this.ctx.stroke(explosion) ;
         
     }
 
@@ -1042,12 +1018,29 @@ class drawing {
             }
         })
 
-        this.ctx.fillStyle = "red" ;
-        this.ctx.strokeStyle = "green" ;
-        this.ctx.fill(platformDraw) ;
-        this.ctx.fill(peakDraw) ;
+        this.ctx.shadowColor = "rgba(243,13,21)";
+        this.ctx.shadowBlur = 10;
+        this.ctx.strokeStyle = "rgba(243,13,21,0.5)" ;
+        this.ctx.lineWidth=6;
         this.ctx.stroke(peakDraw) ;
+        this.ctx.lineWidth=4.5;
+        this.ctx.stroke(peakDraw) ;
+        this.ctx.lineWidth=3;
+        this.ctx.stroke(peakDraw) ;
+        this.ctx.lineWidth=1.5;
+        this.ctx.stroke(peakDraw) ;
+
+        this.ctx.shadowColor = "rgba(255, 254, 242)";
+        this.ctx.shadowBlur = 20;
+        this.ctx.strokeStyle = "rgba(255, 254, 242,1)" ;
+        this.ctx.lineWidth=4.5;
         this.ctx.stroke(platformDraw) ;
+        this.ctx.lineWidth=3;
+        this.ctx.stroke(platformDraw) ;
+        this.ctx.lineWidth=1.5;
+        this.ctx.stroke(platformDraw) ;
+        this.ctx.shadowBlur = 0;
+
     }
 }
 
@@ -1061,7 +1054,7 @@ class drawing {
         // Level construction
 
 function level1(gridInstance, heroInstance) {
-    gridInstance.defaultGrid(100) ;
+    gridInstance.defaultGrid(2000) ;
 
 
     let a = -(2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))**2)/2 ;
@@ -1070,18 +1063,22 @@ function level1(gridInstance, heroInstance) {
     let exaliterSpace = (-b - Math.sqrt(delta))/(2*a) * heroInstance.vx ;
     
     
-    let platform1 ;
-    for (let k = 0; k < 13 ; k++) {
-        platform1 = new platform(10+k + exaliterSpace, 15+3/2) ;
-        gridInstance.addPlatform(platform1) ;
+    for (let m = 15; m > 0; m = m-1) {
+        for (let l = m; l < m+1; l++) {
+            for (let k =(15-m) *8; k <(15-m) *8 +15  ; k++) {
+                platform1 = new platform(10+k + exaliterSpace, 19-l+3/2) ;
+                gridInstance.addPlatform(platform1) ;
+            }
+        }
     }
 
-    platform1 = new platform(10+13 + exaliterSpace, 16+3/2) ;
-    gridInstance.addPlatform(platform1) ;
-    platform1 = new platform(10+13 + exaliterSpace, 17+3/2) ;
-    gridInstance.addPlatform(platform1) ;
-    platform1 = new platform(10+13 + exaliterSpace, 18+3/2) ;
-    gridInstance.addPlatform(platform1) ;
+    let peak1 = new peak(24.5+exaliterSpace, 16, "up") ;
+    gridInstance.addPeak(peak1) ;
+
+    let endingInstance = new ending(50) ;
+    gridInstance.addEnding(endingInstance) ;
+
+
 
     /*for (let k = 7; k < 13 ; k++) {
         platform1 = new peak(10+k-1/2 + exaliterSpace, 15+1.2, 'up') ;
@@ -1100,8 +1097,8 @@ function level1(gridInstance, heroInstance) {
     gridInstance.addPlatform(platform1) ;*/
     
     
-    let endingInstance = new ending(90)
-    gridInstance.addEnding(endingInstance)
+    //let endingInstance = new ending(90)
+    //gridInstance.addEnding(endingInstance)
 
 }
 
@@ -1112,8 +1109,6 @@ function restart() {
     drawingInstance.drawHero(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;  
     cptBeforePossibleJump = 0 ;  
-    cptDeath = 0 ;
-    cptWin = 0 ;
 }
 
 function deathFinish() {
@@ -1121,70 +1116,76 @@ function deathFinish() {
     drawingInstance.setGridPosition(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;
     drawingInstance.deathAnimation(heroInstance) ;
-    if (cptDeath < drawingInstance.deathAnimationTime * drawingInstance.fps) {
-        cptDeath ++ ;
-        setTimeout(deathFinish, 1/drawingInstance.fps * 1000);
+    if (Date.now() - frameTimeDiff.endingBegin < drawingInstance.deathAnimationTime*1000) {
+        requestAnimationFrame(deathFinish);
     } else {    
         restart() ;
     }
 }
 
 function winFinish() {
-    heroInstance.move(drawingInstance, gridInstance) ;
+    heroInstance.move(gridInstance) ;
     drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height)
     drawingInstance.setGridPosition(heroInstance) ;
     drawingInstance.drawHero(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;
     cptBeforePossibleJump++ ;
-    if (cptWin < drawingInstance.winAnimationTime * drawingInstance.fps) {
-        cptWin ++ ;
+    if (Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1000) {
         heroInstance.vx *= 0.98 ;
         heroInstance.vy0 *= 0.98 ;
-        setTimeout(winFinish, 1/drawingInstance.fps * 1000);
+        requestAnimationFrame(winFinish);
     } else {    
         restart() ;
     }
 }
 
 function game() {
-    if (!heroInstance.isDead && !heroInstance.haveFinished) {
-        if(keys.Space && cptBeforePossibleJump > 30) {
-            heroInstance.jump() ;
-        }
-        heroInstance.move(drawingInstance, gridInstance) ;
-        drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
-        drawingInstance.setGridPosition(heroInstance) ;
-        drawingInstance.drawHero(heroInstance) ;
-        drawingInstance.drawGrid(gridInstance, heroInstance) ;
-        setTimeout(game, 1/drawingInstance.fps * 1000);
-        cptBeforePossibleJump++ ;
-    } else {
-        if (heroInstance.isDead) {
-            heroInstance.setDeathParticule() ;    
-            deathFinish() ;
+    console.log(frameTimeDiff.lastTime)
+
+    frameTimeDiff.dt = (Date.now() - frameTimeDiff.lastTime)/1000 ;
+    frameTimeDiff.lastTime = Date.now() ;
+
+    console.log(frameTimeDiff.lastTime)
+    console.log(frameTimeDiff.dt)
+
+        if (!heroInstance.isDead && !heroInstance.haveFinished) {
+            if(keys.Space && (Date.now() - frameTimeDiff.startBegin > 500)) {
+                heroInstance.jump() ;
+            }
+            heroInstance.move(gridInstance) ;
+            drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
+            drawingInstance.setGridPosition(heroInstance) ;
+            drawingInstance.drawHero(heroInstance) ;
+            drawingInstance.drawGrid(gridInstance, heroInstance) ;
+            requestAnimationFrame(game);
         } else {
-            winFinish()        
+            frameTimeDiff.endingBegin = Date.now()
+            if (heroInstance.isDead) {
+                heroInstance.setDeathParticule() ;    
+                deathFinish() ;
+            } else {
+                winFinish()        
+            }
+    
         }
-
-    }
-
 }
 
 function keyEventHandler(event){
-    if (!heroInstance.hasStarted) {
-        heroInstance.hasStarted = true ;
-        toto = Date.now() ;
-        game()
-    }
     keys[event.code] = event.type === "keydown";
     event.preventDefault();
+    if (!heroInstance.hasStarted && keys.Space) {
+        heroInstance.hasStarted = true ;
+        frameTimeDiff.lastTime = Date.now() ;
+        frameTimeDiff.startBegin = Date.now() ;
+        game() ;
+    }
 }
-
-
 
 
 // main
 
+let toto ;
+let titi ;
 
 let canvasGame = document.getElementById("canvas");
 let ctx = canvasGame.getContext("2d");
@@ -1196,9 +1197,9 @@ let heroInstance = new hero();
 let gridInstance = new grid() ;
 level1(gridInstance, heroInstance) ;
 
-let cptBeforePossibleJump = 0 ;
-let cptDeath = 0 ;
-let cptWin = 0 ;
+const frameTimeDiff = {lastTime: 0, dt:0, startBegin: 0,endingBegin: 0} ;
+
+
 
 drawingInstance.setGridDimension() ;
 restart() ;
