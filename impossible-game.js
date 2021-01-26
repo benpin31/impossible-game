@@ -766,6 +766,10 @@ class hero {
                 this.rotate(-Math.PI/(1/frameTimeDiff.dt * this.xJump/(2*this.vx))) ; // to look pretty : the hero rotate when not on a roof
                 this.isJumping = true ; // can't jump before the end of the jump /fall
             }
+        } else {
+            console.log(floorContactElementCenter) ;
+            console.log(deadContactElementCenter) ;
+            console.log(floorContactElementCenter.length)
         }
     }
 
@@ -869,9 +873,13 @@ class ending {
 
 class checkPoint {
     constructor(heroInstance) {
-        console.log("je suis un connard !!!!!")
         this.x = heroInstance.body.center.x ;
-        console.log(heroInstance.body.center.x)
+        this.y = heroInstance.body.center.y ;
+        this.col = Math.floor(this.x) ;
+    }
+
+    update(heroInstance) {
+        this.x = heroInstance.body.center.x ;
         this.y = heroInstance.body.center.y ;
         this.col = Math.floor(this.x) ;
     }
@@ -940,35 +948,53 @@ class grid {
     }
 }
 
+class backGround {
+    constructor() {
+        this.city = document.getElementById("city") ;
+        this.cityReverse = document.getElementById("city-reverse") ;
+        this.speed = 300 ;
+        this.t = 0 ;
+    }
+}
+
     /*  drawing class : gather all element used to draw each frame of the game */
 
 class drawing {
-    constructor() {
-        let canvas = document.getElementById("canvas");
+    constructor(heroInstance) {
+        // Draw principal canvas
+        let canvas = document.getElementById("canvas-game");
         this.ctx = canvas.getContext("2d") ;
         this.width = document.getElementById("game-interface").offsetWidth;
         this.height = document.getElementById("game-interface").offsetHeight ;
+        this.ctx.canvas.width  = this.width;
+        this.ctx.canvas.height = this.height;
         this.unity = this.width/40;
         this.heroCenterXPosition = 0 ; // use to make the grid scroll with the hero on x. update in method setGridPosition
         this.heroAjustYPosition = 0 ;  // use to make the grid scrill with the hero on y. update in method setGridPosition
         this.deathAnimationTime = 0.3;
         this.winAnimationTime = 2 ;
 
-    }
+        // Draw background canvas
+        let canvasBack = document.getElementById("canvas-background") ;
+        this.ctxBack = canvasBack.getContext("2d") ;
+        this.ctxBack.canvas.width  = this.width;
+        this.ctxBack.canvas.height = this.height;
+        this.backGroundTimeScroll = 0 ;
+        this.backgroundSpeed = heroInstance.vx/6*this.unity ;
 
-    setGridDimension() {
-        this.ctx.canvas.width  = this.width;
-        this.ctx.canvas.height = this.height;
+        this.backgroundImageCity = document.getElementById("city") ;
+        this.backgroundImageCityReverse = document.getElementById("city-reverse") ;
+
     }
 
     setGridPosition(heroInstance) {
         /*  ajust position view of the grid in order it always follow the hero. It update heroCenterXPosition 
             and heroAjustYPosition which have to be added to coordinate of elements to be plot*/
         this.heroCenterXPosition = heroInstance.body.center.x - 10 ;
-        if (heroInstance.body.center.y + this.heroAjustYPosition < 3) {
-            this.heroAjustYPosition = Math.min(3 - heroInstance.body.center.y,0) ;
-        } else if (this.height/this.unity - heroInstance.body.center.y - this.heroAjustYPosition < 2) {
-            this.heroAjustYPosition = this.height/this.unity - heroInstance.body.center.y - 2
+        if (heroInstance.body.center.y + this.heroAjustYPosition < 5) {
+            this.heroAjustYPosition = Math.min(5 - heroInstance.body.center.y,0) ;
+        } else if (this.height/this.unity - heroInstance.body.center.y - this.heroAjustYPosition < 5) {
+            this.heroAjustYPosition = this.height/this.unity - heroInstance.body.center.y - 5
         }
     }
 
@@ -1060,8 +1086,6 @@ class drawing {
                         checkPointDraw.lineTo(this.gridAbscissa(element.x - this.heroCenterXPosition), this.gridOrdinate(element.y+1 + this.heroAjustYPosition));
                         checkPointDraw.closePath();                
                     } else if (element instanceof ending) {
-                        let endingCoordinate = [this.gridAbscissa(element.col+1/2 - this.heroCenterXPosition),
-                        this.gridOrdinate(15 + this.heroAjustYPosition)]
                         endingDraw.moveTo(this.gridAbscissa(element.col-1/2 - this.heroCenterXPosition), this.gridOrdinate(14 + this.heroAjustYPosition))
                         endingDraw.lineTo(this.gridAbscissa(element.col+3/2 - this.heroCenterXPosition), this.gridOrdinate(14 + this.heroAjustYPosition))
                         endingDraw.lineTo(this.gridAbscissa(element.col+1 - this.heroCenterXPosition), this.gridOrdinate(6 + this.heroAjustYPosition))
@@ -1077,7 +1101,13 @@ class drawing {
                         this.ctx.textAlign = "center";
                         this.ctx.font = "80px calibri";
                         this.ctx.shadowBlur = 20;
-                        this.ctx.fillText("GAME OVER", endingCoordinate[0], endingCoordinate[1]);
+                        this.ctx.fillText("FINISHED !!", this.gridAbscissa(element.col+1/2 - this.heroCenterXPosition), this.gridOrdinate(16 + this.heroAjustYPosition));
+                        if(checkPointCounter > 0) {
+                        this.ctx.font = "20px calibri";     
+                        this.ctx.shadowColor = "rgba(224,231,34)";
+                        this.ctx.fillStyle = "rgba(224,231,34,1)" ;
+                            this.ctx.fillText("CAN YOU DO IT WITHOUT CHECKPOINTS ?", this.gridAbscissa(element.col+4/2 - this.heroCenterXPosition), this.gridOrdinate(15.5 + this.heroAjustYPosition));
+                        }
                 
                     }
                 })
@@ -1106,9 +1136,9 @@ class drawing {
         this.ctx.lineWidth=1.5;
         this.ctx.stroke(platformDraw) ;
 
-        this.ctx.shadowColor = "rgba(57, 255, 20)";
+        this.ctx.shadowColor = "rgba(224,231,34)";
         this.ctx.shadowBlur = 20;
-        this.ctx.strokeStyle = "rgba(57, 255, 20,1)" ;
+        this.ctx.strokeStyle = "rgba(224,231,34,1)" ;
         this.ctx.lineWidth=4.5;
         this.ctx.stroke(checkPointDraw) ;
         this.ctx.lineWidth=3;
@@ -1127,6 +1157,36 @@ class drawing {
         this.ctx.stroke(endingDraw) ;
 
     }
+
+    drawCheckpointCounter() {
+        this.ctxBack.shadowColor = "rgba(224,231,34)";
+        this.ctxBack.fillStyle = "rgba(224,231,34,1)" ;
+        this.ctxBack.font = "80px calibri";
+        this.ctxBack.shadowBlur = 20;
+        this.ctxBack.fillText(checkPointCounter, 15, 85);
+        this.ctxBack.shadowBlur = 0;
+    }
+
+    drawBackGround() {
+        let ratio =  this.backgroundImageCity.width /this.backgroundImageCity.height ;
+        let imageHeight = this.ctxBack.canvas.height ;
+        let imageWidth = imageHeight * ratio
+        this.backGroundTimeScroll +=  frameTimeDiff.dt * this.backgroundSpeed ;
+        let xPosition = Math.floor(this.backGroundTimeScroll/imageWidth) ;
+        this.ctxBack.clearRect(0,0,this.ctxBack.canvas.width,this.ctxBack.canvas.height  )
+        this.ctxBack.save();
+        this.ctxBack.translate(-this.backGroundTimeScroll, 0);
+        if(xPosition%2 == 0) {
+            this.ctxBack.drawImage(this.backgroundImageCity,xPosition*imageWidth,0,imageWidth ,imageHeight)
+            this.ctxBack.drawImage(this.backgroundImageCityReverse,(xPosition+1)*imageWidth,0,imageWidth ,imageHeight)
+        } else {
+            this.ctxBack.drawImage(this.backgroundImageCityReverse,xPosition*imageWidth,0,imageWidth ,imageHeight)
+            this.ctxBack.drawImage(this.backgroundImageCity,(xPosition+1)*imageWidth,0,imageWidth ,imageHeight)       
+                      }
+      
+         this.ctxBack.restore();
+
+    }
 }
 
 
@@ -1138,6 +1198,8 @@ class drawing {
 
         // Level construction
 
+const frameTimeDiff = {lastTime: 0, dt:0, startBegin: 0,endingBegin: 0, lastCheckPoint : 0} ;
+
 function level1(gridInstance, heroInstance) {
     gridInstance.defaultGrid(2000) ;
 
@@ -1145,18 +1207,30 @@ function level1(gridInstance, heroInstance) {
     let a = -(2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))**2)/2 ;
     let b = (2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))) ;
     let delta = b**2+4*a ;
-    let exaliterSpace = (-b - Math.sqrt(delta))/(2*a) * heroInstance.vx ;
+    let exaliterSpace = ((-b - Math.sqrt(delta))/(2*a)+1/60) * heroInstance.vx ;
     
-    let peakInstance = new peak(40,5, "up") ;
+    let peakInstance = new peak(31,104, "up") ;
     gridInstance.addPeak(peakInstance) ;    
-     peakInstance = new peak(41,5, "up") ;
-    gridInstance.addPeak(peakInstance) ;    
+     //peakInstance = new peak(41,5, "up") ;
+    //gridInstance.addPeak(peakInstance) ; /   
      /*peakInstance = new peak(42,5, "up") ;
     gridInstance.addPeak(peakInstance) ;    
      peakInstance = new peak(43,5, "up") ;
     gridInstance.addPeak(peakInstance) ;*/
 
-    let endingInstance = new ending(90)
+    let platformInstance ;
+
+    for (let k = 0; k < 25; k++) {
+        platformInstance = new platform(6.5+k, 104.5) ;
+        gridInstance.addPlatform(platformInstance) ;
+    }
+
+    platformInstance = new platform(6, 100+5) ;
+    gridInstance.addPlatform(platformInstance) ;
+
+    //gridInstance.removeCol(50,54)
+
+    let endingInstance = new ending(180)
     gridInstance.addEnding(endingInstance)
 
 }
@@ -1165,7 +1239,9 @@ function restart(parameters) {
     heroInstance = new hero(parameters[0], parameters[1],
         parameters[2], parameters[3], parameters[4],
         parameters[5], parameters[6],parameters[7], parameters[8]);
+    drawingInstance.backGroundTimeScroll = backGroundPositionSauv.save ;
     drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
+    drawingInstance.drawBackGround() ;
     drawingInstance.setGridPosition(heroInstance) ;
     drawingInstance.drawHero(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;  
@@ -1188,6 +1264,7 @@ function deathFinish() {
             game() ;
         } else {
             frameTimeDiff.startBegin = Date.now() ;
+            backGroundPositionSauv.save = 0 ;
             level1(gridInstance, heroInstance) ;
             restart(gameParameters.initial) ;
         }
@@ -1200,12 +1277,13 @@ function winFinish() {
     drawingInstance.setGridPosition(heroInstance) ;
     drawingInstance.drawHero(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;
-    if (Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1000) {
-        heroInstance.vx *= 0.98 ;
-        heroInstance.vy0 *= 0.98 ;
+    if (Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*2000) {
+        heroInstance.vx *= 0.90 ;
+        heroInstance.vy0 *= 0.90 ;
         requestAnimationFrame(winFinish);
     } else {    
         frameTimeDiff.startBegin = Date.now() ;
+        backGroundPositionSauv.save = 0 ;
         level1(gridInstance, heroInstance) ;
         restart(gameParameters.initial) ;
     }
@@ -1223,15 +1301,18 @@ function game() {
         if(keys.KeyS && (Date.now() - frameTimeDiff.lastCheckPoint > 200)) {
             addCheckPoint() 
             checkPointCounter++ ;
-            let checkPointInstance = new checkPoint(heroInstance) ;
-            gridInstance.addCheckPoint(checkPointInstance) ;
+            checkPointValue.checkpoint.update(heroInstance) ;
+            gridInstance.addCheckPoint(checkPointValue.checkpoint) ;
             frameTimeDiff.lastCheckPoint = Date.now()
+            backGroundPositionSauv.save = drawingInstance.backGroundTimeScroll ;
         }
         heroInstance.move(gridInstance) ;
         drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
+        drawingInstance.drawBackGround() ;
         drawingInstance.setGridPosition(heroInstance) ;
         drawingInstance.drawHero(heroInstance) ;
         drawingInstance.drawGrid(gridInstance, heroInstance) ;
+        drawingInstance.drawCheckpointCounter() ;
         requestAnimationFrame(game);
     } else {
         frameTimeDiff.endingBegin = Date.now() ;
@@ -1261,7 +1342,6 @@ function addCheckPoint() {
 
 function keyEventHandler(event){
     keys[event.code] = event.type === "keydown";
-    console.log(keys)
     event.preventDefault();
     if (!heroInstance.hasStarted && keys.Space) {
         heroInstance.hasStarted = true ;
@@ -1277,32 +1357,31 @@ function keyEventHandler(event){
 
 
 // main
-
-let toto ;
-let titi ;
-
-let canvasGame = document.getElementById("canvas");
-let ctx = canvasGame.getContext("2d");
 const keys = {};
 
-const drawingInstance = new drawing();
-const frameTimeDiff = {lastTime: 0, dt:0, startBegin: 0,endingBegin: 0, lastCheckPoint : 0} ;
-
-const gameParameters = {initial:[[6,6], [1,0], 12, 0, 4, 3, 0, 0, false]}
-let checkPointCounter = 0 ;
-
-
+const gameParameters = {initial:[[6,106], [1,0], 12, 0, 4, 3, 0, 0, false]}
 let heroInstance = new hero(gameParameters.initial[0], gameParameters.initial[1],
     gameParameters.initial[2], gameParameters.initial[3], gameParameters.initial[4],
     gameParameters.initial[5], gameParameters.initial[6],gameParameters.initial[7], gameParameters.initial[8]);
 
+const drawingInstance = new drawing(heroInstance);
+
+const checkPointValue =  {} ;
+
+const backGroundPositionSauv = {save:0} ;
+let checkPointCounter = 0 ;
+
 let gridInstance = new grid() ;
 level1(gridInstance, heroInstance) ;
 
-drawingInstance.setGridDimension() ;
-restart(gameParameters.initial) ;
+function AtLoad() {
+    /* When the page is load, we begin by restart the game (function is called restart and not start 
+    because it is equaly use after death or checkpoint) */
+    checkPointValue.checkpoint = new checkPoint(heroInstance)
+    restart(gameParameters.initial) ;
+}
 
-
+window.onload = AtLoad ;
 
 window.addEventListener("keydown",keyEventHandler);
 window.addEventListener("keyup",keyEventHandler);
