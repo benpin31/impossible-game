@@ -1,10 +1,12 @@
-/*  Various functions
-
-    This part gather various functions which will be usefull in the rest of the code
-*/
+/*****************************************************************************************
+ *  Various functions
+ * 
+ *  This part gather various functions which will be usefull in the rest of the code
+******************************************************************************************/
 
 function positivMod(n, mod) {
-    // classic n%mod operator gives a negative number when n < 0. This function give a positive modulo in such cases .
+    /*  classic n%mod operator gives a negative number when n < 0. This function 
+        give a positive modulo in such cases */
     return (n%mod+mod)%mod;
 }
 
@@ -15,16 +17,20 @@ function keepNDec(x, nDec) {
     return Math.round(x*10 ** nDec)/(10 ** nDec);
 }
 
-/*  Module polygon : come from a js module. I don't know actually how to use them, but in the future, this part will 
-    be seprate from the main code
-
-    Contains some classes to manage polygon gemetry in code. Principal classes is 
-    classes polygon which contains a method sat for (Separating Axes Theorem) which compute if two polygones are separated.
-
-    Other classes are : 
-    - point, vector, straightLine : they are requisite in polygon definitions and methods
-    - square which extend polygon in the special case of square
-*/
+/*****************************************************************************************
+ *  Module polygon : 
+ * 
+ *  come from a js module. I don't know actually how to use them, but in the future, this 
+ *  part will be seprate from the main code.
+ * 
+ *  Contains some classes to manage polygon gemetry in code. Principal classes is 
+ *  classes polygon which contains a method sat for (Separating Axes Theorem) which compute 
+ *  if two polygones are separated.
+ *  
+ *  Other classes are : 
+ *  - point, vector, straightLine : they are requisite in polygon definitions and methods
+ *  - square which extend polygon in the special case of square
+******************************************************************************************/
 
 class point {
     constructor(x,y) {
@@ -501,23 +507,27 @@ class square extends polygon {
 
 }
 
-/*  Games elements classes 
+/*****************************************************************************************
+ *  Games elements classes 
+ * 
+ *  I have organize the game in three principal elements : 
+ *  - the heros element : on class which contains all the method of hero
+ *  - the grid element which contain all elements about the level. There is more than one 
+ *    class : some small class for element as peak or platform, and a class grid
+/*****************************************************************************************
 
-    I have organize the game in three principal elements : 
-     - the heros element : on class which contains all the method of hero
-     - the grid element which contain all elements about the level. There is more than one class : some small class
-       for element as peak or platform, and a class grid
-     - the drawing element which allow to draw the game */
-
-
-    /* hero */
+    /*  Hero
+    
+        One classe which contains all methods to manage the hero. It espaciallycontains method
+        move which compute new position of the hero after a frame.
+    */
 
 class hero {
     
     constructor(positionCenter, positionPolarCoordinates,
         vx, vy0, xJump, yJump, g, t, isJumping) {
         /*  a hero is the set of a body which is a square, and foot which will be usefull to test if the hero land
-            on a block (the foot touch the roof of the block) or not. Soot is and array of segments declared a 
+            on a block (the foot touch the roof of the block) or not. foot is and array of segments declared a 
             polygon to apply them sat algorithm. If the square is horizontal, the array contains only one segment : the 
             lowest, else it contains two segments : those around the lowest point */
 
@@ -528,11 +538,13 @@ class hero {
         /*  foot hitBox */
         let footPoint = this.body.getLowestPointIndex()
         if (footPoint.length == 2) {
+            // In that case, the first point of the foot if the leftest because of mthode getLowestPointIndex
             let footPoint1 = this.body.vertices[footPoint[0]].copy() ;
             let footPoint2 = this.body.vertices[footPoint[1]].copy() ;
             let foot1 = new polygon([footPoint1,footPoint2]);
             this.foot = [foot1]
         } else {
+            // In that case, the first point of the two foots is the lowest of the square
             let footPoint1 = this.body.vertices[footPoint[0]].copy() ;
             let footPoint2 = this.body.vertices[positivMod(footPoint[0]+1,4)].copy() ;
             let footPoint3 = this.body.vertices[positivMod(footPoint[0]-1,4)].copy() ;
@@ -542,7 +554,8 @@ class hero {
         } 
 
         /*  Physical attributes 
-            Those parameters are computed in order the hero do a jump of 4 unity heigh and 3 unity long. 
+
+            Those parameters are computed in order the hero do a jump of xJump unity heigh and yJump unity long. 
             We use classical newtonian physic for the trajectories which says that he gravity center of the hero 
             follow the next trajectory (with t=0 as begning of a jump)
                 x(t) = vx * t
@@ -555,8 +568,8 @@ class hero {
             This formula work equaly when the hero fall from a bloc (in that case vz0=0) and when the hero is on a 
             bloc (in that case, g and vy0 = 0).
             
-            On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. 
-            xJump and zJump are fixed too
+            On the game, vx is fixed, and we choose g and vy0 so that a jump is xJump long and yJump height. 
+            xJump and yJump are fixed too
         */
 
         this.vx = vx ; // horizontal speed of the hero
@@ -568,15 +581,21 @@ class hero {
         this.isJumping = isJumping ; 
             // use to avoid the gamer to do multiple jump, when jump, it become true and become false only when the hero land 
     
-        /*  hero status */
+        /*  hero status 
+        
+            code différent important state of the hero
+        */
 
-        this.hasStarted = false ;
+        this.hasStarted = false ; // if the game has not started
         this.isDead = false ; // for game over
-        this.haveFinished = false ;
+        this.haveFinished = false ; // for win
 
-        /*  For hero death animation */
+        /*  For hero death animation 
+        
+            When the hero die, it become a set of particle. Those particles re set in setParticules method    
+        */
 
-        this.deathParticule = [] ;
+        this.deathParticle = [] ;
         
     }
 
@@ -608,13 +627,14 @@ class hero {
     }
 
     footContactWithRoof(previousFoot, platformInstance) {
-        /*  Compute collision to know if the hero has land. The hero land on a platform if its foot have collision
-            with platform roof (see class plateform). However, because the game is not continuous but dicrete, and 
+        /*  Compute collision to know if the hero has land. The hero land on a platform if its foots have collisioned (do that word exists ?)
+            with platforms roof (see class plateform). However, because the game is not continuous but dicrete, and 
             that roof and foot are lines, it could arive that at t, foot is above a roof and a t+1, it is below. In that
             case, the game will consider there is no collision. To avoid that. We construct a footPolygon which is the 
             polygon obtain by contatenate previous foot position and next foot position. Thank to that, if
             footPolygon have collision wich the roof, it means that bettween t and t+1, the hero have land on the roof. */
-        let cpt = 0 ;
+
+        let cpt = 0 ; // if at the end cpt > 0, there is a contact
 
         let footPolygon ;
         for (let k = 0; k < this.foot.length; k++) {
@@ -657,58 +677,70 @@ class hero {
             need to use t.
             
             On the game, vx is fixed, and we choose g and vz0 so that a jump is xJump long and yJump height. xJump and zJump are fixed too
+
+            See grid class to know what is gridInstance
             */
 
-        
         let previousFoot = [] ;
         this.foot.forEach(foot => {
             previousFoot.push([foot.vertices[0].copy(), foot.vertices[1].copy()]) ;
         })
-
             // save previous foot to verify if the hero land (see method footContactWithRoof)
 
         let dt = frameTimeDiff.dt
             // time interval between to frames
 
-        let translationVector = new vector(this.vx * dt, -1/2*this.g * dt * (2*this.t+dt) + this.vy0 * dt ) ;
+        let translationVector = new vector(this.vx * dt, Math.max(-1/2*this.g * dt * (2*this.t+dt) + this.vy0 * dt, -1 )) ;
+            // limit y-translation to avoid the hero to go throught the floor
+
         this.translate(translationVector) ;
             // translate the hero with finite diffrence equation
 
         this.t += dt ;
-            /*  for next step, t become t+dt. If the movement is not a jump or a fall, t will be set to 0 next. Indeed
-                t is not mandatory for recticlign horizontal movement, and that way, t will be 0 at the begning of a jump 
-                or a fall as expected.*/
+            //  for next step, t become t+dt. If the movement is not a jump or a fall, t will be set to 0 next. Indeed
+            //    t is not mandatory for rectilign horizontal movement, and that way, t will be 0 at the begning of a jump 
+            //    or a fall as expected.*/
 
         /*  Grid interaction check : We test collision of the hero with its neihbourg envirenement. 
-             - collision with a peak = dead
-             - collision with a platform = dead if not collisions with the floor of the platform
+            - collision with a peak = dead
+            - collision with a platform = dead if not collisions with the floor of the platform
         */
 
-            // at the end  of the collsion check, if not dead, use to know if there is at leat one contact (necessary)
-            // a foot-roof contact, a modify physical constant in consequence
-        let deadContactElementCenter = [] ;
+            //  Some times, the hero could touch for example a roof and a peak but the peak is same level (or above 
+            //  because of discret nature of a game). In that case, the user don't loose. To check that, we introduce 
+            //  the two following arrays
+        let deadContactElementCenter = [] ; 
+            //  if touch a death element, we add in that array the value of the center of element. At the end, if the 
+            //  hero didn't touch a floor above those coordintes, the hero die
         let floorContactElementCenter = [] ;
-            // if landing, use to replace the hero to good coordinate. Indeed, because of the non consinuity, the hero could
-            // be below a roof, floorContactCoordinate contains the coOrdinates of the platform where the hero land,
-            // and this way, we can corrEct y position of the hero
+            //  if touch a floor element, we add in that array the value of the center of element. At the end, if the 
+            //  hero didn't touch a floor above those coordintes, the hero die
 
         let aroundGrid = gridInstance.grid.slice(Math.max(Math.floor(this.body.center.x-1),0), Math.floor(this.body.center.x+2)) ;
+            // only test element that the hero can touch, ie elemnts in the neighbourhood
 
         aroundGrid.forEach(col => {
+            // one test contact for each potential elements
             if (col != undefined) {
+                // if columns grid is empty
                 col.forEach(element => {
                     if (element instanceof platform) {
                         if (!this.body.sat(element.platform)) {
+                            // if touch platform, test if touch the roof : if yes, we add an element in floorContactElementCenter, 
+                            // else in deadContactElementCenter
                             if (this.footContactWithRoof(previousFoot,element)) {
                                 floorContactElementCenter.push(element.platform.center.y) ;
                             } else {
                                 deadContactElementCenter.push(element.platform.center.y) ;
-                            }                        }
+                            }                       
+                        }
                     } else if (element instanceof peak) {
+                        // if touch peak, it's always a dead contact
                         if (!this.body.sat(element.peak)) {
                             deadContactElementCenter.push(element.center.y) ;
                         }
                     } else if (element instanceof ending) {
+                        // if touch finish, it's the end
                         if (!this.body.sat(element.ending)) {
                             this.haveFinished = true ;
                         }
@@ -718,6 +750,8 @@ class hero {
         })
 
         let maxDeadContactCenter, maxFloorContactCenter ;
+        //  max of the deadContactElementCenter and floorContactElementCenter. if maxFloorContactCenter > maxDeadContactCenter
+        //  it's not game over, else it is
 
         if(deadContactElementCenter.length > 0) {
             maxDeadContactCenter = deadContactElementCenter.reduce(function(a, b) {return Math.max(a, b);});
@@ -750,12 +784,15 @@ class hero {
         }
 
         if (!this.isDead) {
+            //  update some parameters following contact nature after move
             if (floorContactElementCenter.length > 0) {
                 let newCenter = new point(this.body.center.x, maxFloorContactCenter+1) ;
                 let translateVector = new vector(this.body.center, newCenter) ;
                 this.translate(translateVector) ;
+                    // if the hero if below the roof, e replace it on it
 
                 this.rotate(2*Math.PI - this.body.polarDirection[1]) ;
+                    // if the hero is rotated, we reput it right
 
                 this.g = 0 ; // g is compensated by newton 3rd law
                 this.vy0 = 0 ; // the vertical movment stop
@@ -766,11 +803,7 @@ class hero {
                 this.rotate(-Math.PI/(1/frameTimeDiff.dt * this.xJump/(2*this.vx))) ; // to look pretty : the hero rotate when not on a roof
                 this.isJumping = true ; // can't jump before the end of the jump /fall
             }
-        } else {
-            console.log(floorContactElementCenter) ;
-            console.log(deadContactElementCenter) ;
-            console.log(floorContactElementCenter.length)
-        }
+        }  
     }
 
     jump() {
@@ -784,9 +817,10 @@ class hero {
         }
     }
 
-    setDeathParticule() {
+    setDeathParticle() {
+        /*  When death, create explosion particles */
         for (let k = 0; k < 40; k++) {
-            this.deathParticule.push(
+            this.deathParticle.push(
                 {
                     position: this.body.center.copy(),
                     angle: 2*Math.PI*Math.random(),
@@ -796,11 +830,14 @@ class hero {
     }
 }
 
-    /*  Grid elements : 
+    /*  Level elements : 
         
-        Two kind of grid elements : 
+        4 kind of grid elements : 
         - platform on which one can land, or crash if foot hero don't touch platform roof
-        - peak on which one can die*/
+        - peak on which one can die
+        - ending
+        - checkpoints
+    */
 
 class platform {
     /*  A platform is 
@@ -808,9 +845,11 @@ class platform {
          -  the the roof which is the upper edge of the square. It is used to verify if the hero land on the platforme : 
             the foot and the roof enter in collision, or not (in that case, if collision, it's game over)
             
-        For each element one add col = floor(x-positon) attribute. Elements will be organized on a grid which is an array. In array
-        cell n, we will place all element which col = n. That way, it is easy to get all element of the neibourhood
-        of the hero to test collisions*/
+        For each element one add col = floor(x-positon) attribute. Elements will 
+        be organized on a grid which is an array. In array cell n, we will place all 
+        element which col = n. That way, it is easy to get all element of the neibourhood
+        of the hero to test collisions
+    */
     constructor(x, y) {
         /* x,y are the coordinates of the center of the platform */
         this.col = Math.floor(x) ;
@@ -821,11 +860,13 @@ class platform {
 }
 
 class peak {
-        /*  peak is a triangle. There is 4 kind of peak according to there orientation.
-            
-        For each element one add col = floor(x-positon) attribute. Elements will be organized on a grid which is an array. In array
-        cell n, we will place all element which col = n. That way, it is easy to get all element of the neibourhood
-        of the hero to test collisions*/
+    /*  peak is a triangle. There is 4 kind of peak according to there orientation.
+        
+        For each element one add col = floor(x-positon) attribute. Elements will 
+        be organized on a grid which is an array. In array cell n, we will place all 
+        element which col = n. That way, it is easy to get all element of the neibourhood
+        of the hero to test collisions
+    */
     constructor(x, y, orientation) {
         /* x, y are the coordinates of the lowest leftest point of the square in which the triangle is inscribed */
         let point1, point2, point3 ;
@@ -859,6 +900,13 @@ class peak {
 }
 
 class ending {
+    /*  Ending is a unique element which indicate the end of the level
+        
+        For each element one add col = floor(x-positon) attribute. Elements will 
+        be organized on a grid which is an array. In array cell n, we will place all 
+        element which col = n. That way, it is easy to get all element of the neibourhood
+        of the hero to test collisions
+    */
     constructor(position) {
         /* Ending hitbox is a rectangle horizontal of width 1 and height 10. Position is the abscissa of left edge  */
         let point1 = new point(position, 0) ;
@@ -872,7 +920,15 @@ class ending {
 }
 
 class checkPoint {
+    /*  checkPoints are elemnt places by the gamer to save the state of the game
+        
+        For each element one add col = floor(x-positon) attribute. Elements will 
+        be organized on a grid which is an array. In array cell n, we will place all 
+        element which col = n. That way, it is easy to get all element of the neibourhood
+        of the hero to test collisions
+    */
     constructor(heroInstance) {
+        /*  the position of the checkpoint depends of the position of the hero */
         this.x = heroInstance.body.center.x ;
         this.y = heroInstance.body.center.y ;
         this.col = Math.floor(this.x) ;
@@ -915,6 +971,7 @@ class grid {
     }
 
     addEnding(endingInstance) {
+        /*  Given a ending, place a platform in the grid */
         if (this.grid[endingInstance.col] != undefined) {
             this.grid[endingInstance.col].push(endingInstance) ;
         } else {
@@ -923,6 +980,7 @@ class grid {
     }
 
     addCheckPoint(checkPointInstance) {
+        /*  Given a checkPoint, place a platform in the grid */
         if (this.grid[checkPointInstance.col] != undefined) {
             this.grid[checkPointInstance.col].push(checkPointInstance) ;
         } else {
@@ -948,33 +1006,43 @@ class grid {
     }
 }
 
+/*****************************************************************************************
+ *  Drawing part
+ * 
+ *  Gather all classes which be used to draw ths game
+*****************************************************************************************/
+
 class backGround {
+    /*  Background is what is draw on background. lol */
     constructor() {
-        this.city = document.getElementById("city") ;
+        this.city = document.getElementById("city") ; 
         this.cityReverse = document.getElementById("city-reverse") ;
-        this.speed = 300 ;
+            //  There is two png for the background decor. they are the same but reverse in order
+            //  do an horizontal scrolling whith continuity in decor. When arrive at the end 
+            //  of one, the other is plot with not dicontinuity
         this.t = 0 ;
+            //  time from the begning of the game : use to move the background
     }
 }
 
-    /*  drawing class : gather all element used to draw each frame of the game */
-
 class drawing {
+    /*  Gather attributes and methods to draw frames of the game */
+
     constructor(heroInstance) {
-        // Draw principal canvas
+        // principal canvas
         let canvas = document.getElementById("canvas-game");
         this.ctx = canvas.getContext("2d") ;
         this.width = document.getElementById("game-interface").offsetWidth;
         this.height = document.getElementById("game-interface").offsetHeight ;
         this.ctx.canvas.width  = this.width;
         this.ctx.canvas.height = this.height;
-        this.unity = this.width/40;
+        this.unity = this.width/40; // unity of the game. for exemple, segment (0,0), (1,0) will have unity length when draw
         this.heroCenterXPosition = 0 ; // use to make the grid scroll with the hero on x. update in method setGridPosition
         this.heroAjustYPosition = 0 ;  // use to make the grid scrill with the hero on y. update in method setGridPosition
         this.deathAnimationTime = 0.3;
         this.winAnimationTime = 2 ;
 
-        // Draw background canvas
+        // background canvas
         let canvasBack = document.getElementById("canvas-background") ;
         this.ctxBack = canvasBack.getContext("2d") ;
         this.ctxBack.canvas.width  = this.width;
@@ -1009,56 +1077,45 @@ class drawing {
         return this.height-y*this.unity ;
     }
 
-    drawHero(heroInstance) {
+    drawSquareNeonStyle(elementToDraw,r,g,b,alpha) {
+        /* Draw elements in neon style   */
+        this.ctx.shadowColor = "rgba(" + r +"," + g + "," + b +")";
+        this.ctx.shadowBlur = 10;
+        this.ctx.strokeStyle = "rgba(" + r +"," + g + "," + b + "," + alpha +")" ;
+        this.ctx.lineWidth=6;
+        this.ctx.stroke(elementToDraw) ;
+        this.ctx.lineWidth=4.5;
+        this.ctx.stroke(elementToDraw) ;
+        this.ctx.lineWidth=3;
+        this.ctx.stroke(elementToDraw) ;
+        this.ctx.lineWidth=1.5;
+        this.ctx.stroke(elementToDraw) ;
+    }
 
+    drawTextNeonStyle(text,r,g,b,alpha, fontSize, position) {
+        this.ctx.shadowColor = "rgba(" + r +"," + g + "," + b +")";
+        this.ctx.shadowBlur = 20;
+        this.ctx.fillStyle = "rgba(" + r +"," + g + "," + b + "," + alpha +")" ;
+        this.ctx.textAlign = "center";
+        this.ctx.font = fontSize + "px calibri";
+        this.ctx.fillText(text, this.gridAbscissa(position[0] - this.heroCenterXPosition), this.gridOrdinate(position[1] + this.heroAjustYPosition));
+        this.ctx.font = "20px calibri";     
+    }
+
+    drawHero(heroInstance) {
+        /* draw hero and print it on screen */
         let heroBody = new Path2D() ;
         heroBody.moveTo(this.gridAbscissa(heroInstance.body.vertices[0].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[0].y + this.heroAjustYPosition));
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[1].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[1].y + this.heroAjustYPosition));
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[2].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[2].y + this.heroAjustYPosition));
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[3].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[3].y + this.heroAjustYPosition));
         heroBody.closePath();
-        this.ctx.shadowColor = "rgba(159,76,147)";
-        this.ctx.shadowBlur = 10;
-        this.ctx.strokeStyle = "rgba(159,76,147,0.5)" ;
-        this.ctx.lineWidth=6;
-        this.ctx.stroke(heroBody) ;
-        this.ctx.lineWidth=4.5;
-        this.ctx.stroke(heroBody) ;
-        this.ctx.lineWidth=3;
-        this.ctx.stroke(heroBody) ;
-        this.ctx.lineWidth=1.5;
-        this.ctx.stroke(heroBody) ;
+        this.drawSquareNeonStyle(heroBody,159,76,147,0.5)
 
-    }
-
-    deathAnimation(heroInstance) {
-        let translationVector ;
-        let explosion = new Path2D() ;
-
-        heroInstance.deathParticule.forEach(particule => {
-            translationVector = new vector(Math.cos(particule.angle), Math.sin(particule.angle))
-            translationVector = translationVector.product(particule.maxProjection/(this.deathAnimationTime/frameTimeDiff.dt)) ;
-            particule.position.translate(translationVector)
-            explosion.moveTo(this.gridAbscissa(particule.position.x - this.heroCenterXPosition)+2, this.gridOrdinate(particule.position.y + this.heroAjustYPosition))
-            explosion.arc(this.gridAbscissa(particule.position.x - this.heroCenterXPosition), this.gridOrdinate(particule.position.y + this.heroAjustYPosition), 2, 0, 2 * Math.PI);
-            explosion.closePath() ;
-        })
-
-        this.ctx.shadowColor = "rgba(243,13,21)";
-        this.ctx.shadowBlur = 50;
-        this.ctx.strokeStyle = "rgba(243,13,21,0.5)" ;
-        this.ctx.lineWidth=3;
-        this.ctx.stroke(explosion) ;
-        this.ctx.lineWidth=2.5;
-        this.ctx.stroke(explosion) ;
-        this.ctx.lineWidth=2;
-        this.ctx.stroke(explosion) ;
-        this.ctx.lineWidth=1.5;
-        this.ctx.stroke(explosion) ;
-        
     }
 
     drawGrid(gridInstance, heroInstance) {
+        /*  draw all possible of a grid */
         let minColToKeep = Math.floor(Math.max(this.heroCenterXPosition, 0));
         let maxColToKeep = Math.floor(heroInstance.body.center.x+40)
 
@@ -1066,8 +1123,11 @@ class drawing {
         let peakDraw = new Path2D()  ;
         let checkPointDraw = new Path2D() ;
         let endingDraw = new Path2D() ;
+        let endingPosition ;
 
         gridInstance.grid.slice(minColToKeep, maxColToKeep).forEach(gridRow => {
+            //  only draw elements which can be wiewed by the game : between minColToKeep and maxColToKeep
+            // construction of elements in path2D
             if(gridRow != undefined) {
                 gridRow.forEach(element => {
                     if (element instanceof platform) {
@@ -1094,71 +1154,32 @@ class drawing {
                         endingDraw.lineTo(this.gridAbscissa(element.col-1/2 - this.heroCenterXPosition), this.gridOrdinate(6 + this.heroAjustYPosition))
                         endingDraw.lineTo(this.gridAbscissa(element.col - this.heroCenterXPosition), this.gridOrdinate(6 + this.heroAjustYPosition))
                         endingDraw.lineTo(this.gridAbscissa(element.col-1/2 - this.heroCenterXPosition), this.gridOrdinate(14 + this.heroAjustYPosition))
-                        checkPointDraw.closePath();     
-                        
-                        this.ctx.shadowColor = "rgba(57, 255, 20)"
-                        this.ctx.fillStyle = "rgba(57, 255, 20,1)" ;
-                        this.ctx.textAlign = "center";
-                        this.ctx.font = "80px calibri";
-                        this.ctx.shadowBlur = 20;
-                        this.ctx.fillText("FINISHED !!", this.gridAbscissa(element.col+1/2 - this.heroCenterXPosition), this.gridOrdinate(16 + this.heroAjustYPosition));
-                        if(checkPointCounter > 0) {
-                        this.ctx.font = "20px calibri";     
-                        this.ctx.shadowColor = "rgba(224,231,34)";
-                        this.ctx.fillStyle = "rgba(224,231,34,1)" ;
-                            this.ctx.fillText("CAN YOU DO IT WITHOUT CHECKPOINTS ?", this.gridAbscissa(element.col+4/2 - this.heroCenterXPosition), this.gridOrdinate(15.5 + this.heroAjustYPosition));
-                        }
-                
+                        checkPointDraw.closePath();  
+                        endingPosition = element.col ;
                     }
                 })
             }
         })
 
-        this.ctx.shadowColor = "rgba(243,13,21)";
-        this.ctx.shadowBlur = 10;
-        this.ctx.strokeStyle = "rgba(243,13,21,0.5)" ;
-        this.ctx.lineWidth=6;
-        this.ctx.stroke(peakDraw) ;
-        this.ctx.lineWidth=4.5;
-        this.ctx.stroke(peakDraw) ;
-        this.ctx.lineWidth=3;
-        this.ctx.stroke(peakDraw) ;
-        this.ctx.lineWidth=1.5;
-        this.ctx.stroke(peakDraw) ;
-
-        this.ctx.shadowColor = "rgba(255, 254, 242)";
-        this.ctx.shadowBlur = 20;
-        this.ctx.strokeStyle = "rgba(255, 254, 242,1)" ;
-        this.ctx.lineWidth=4.5;
-        this.ctx.stroke(platformDraw) ;
-        this.ctx.lineWidth=3;
-        this.ctx.stroke(platformDraw) ;
-        this.ctx.lineWidth=1.5;
-        this.ctx.stroke(platformDraw) ;
-
-        this.ctx.shadowColor = "rgba(224,231,34)";
-        this.ctx.shadowBlur = 20;
-        this.ctx.strokeStyle = "rgba(224,231,34,1)" ;
-        this.ctx.lineWidth=4.5;
-        this.ctx.stroke(checkPointDraw) ;
-        this.ctx.lineWidth=3;
-        this.ctx.stroke(checkPointDraw) ;
-        this.ctx.lineWidth=1.5;
-        this.ctx.stroke(checkPointDraw) ;
-
-        this.ctx.shadowColor = "rgba(57, 255, 20)";
-        this.ctx.shadowBlur = 20;
-        this.ctx.strokeStyle = "rgba(57, 255, 20,1)" ;
-        this.ctx.lineWidth=4.5;
-        this.ctx.stroke(endingDraw) ;
-        this.ctx.lineWidth=3;
-        this.ctx.stroke(endingDraw) ;
-        this.ctx.lineWidth=1.5;
-        this.ctx.stroke(endingDraw) ;
-
+            // print elements
+        this.drawSquareNeonStyle(peakDraw,243,13,21,0.5) ;
+        this.drawSquareNeonStyle(platformDraw,255, 254, 242,0.5) ;
+        this.drawSquareNeonStyle(checkPointDraw,224,231,34,0.5) ;
+        if(Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1500 || 
+        (!heroInstance.isDead && !heroInstance.haveFinished)) {
+            // not draw anymor when finish animation is finihed
+            this.drawSquareNeonStyle(endingDraw,57, 255, 20,0.5) ;
+            if(endingPosition != undefined) {
+                this.drawTextNeonStyle("FINISHED !!",57, 255, 20,1, 80, [endingPosition+1/2, 16])   
+                if(checkPointCounter > 0) {
+                    this.drawTextNeonStyle("CAN YOU DO IT WITHOUT CHECKPOINTS ?",224,231,34,1, 20, [endingPosition+4/2, 15.5])
+                }
+            }
+        }
     }
 
     drawCheckpointCounter() {
+        // ckecpoint counter if place on top left on background canvas
         this.ctxBack.shadowColor = "rgba(224,231,34)";
         this.ctxBack.fillStyle = "rgba(224,231,34,1)" ;
         this.ctxBack.font = "80px calibri";
@@ -1167,16 +1188,62 @@ class drawing {
         this.ctxBack.shadowBlur = 0;
     }
 
+    drawPressToRestart(t) {
+        this.ctx.shadowColor = "rgba(57, 255, 20)";
+        this.ctx.fillStyle =  "rgba(57, 255, 20,"+(Math.sin(t)/2+0.5)+")" ;
+        this.ctx.font = "60px calibri";
+        this.ctx.shadowBlur = 20;
+        this.ctx.textAlign = "center";
+        this.ctx.fillText("Press Space to start again", this.ctx.canvas.width/2, this.ctx.canvas.height/2);
+        this.ctx.shadowBlur = 0;
+    }
+
+    
+    deathAnimation(heroInstance) {
+        //  Draw particles when death
+        let translationVector ;
+        let explosion = new Path2D() ;
+
+        heroInstance.deathParticle.forEach(particle => {
+            translationVector = new vector(Math.cos(particle.angle), Math.sin(particle.angle))
+            translationVector = translationVector.product(particle.maxProjection/(this.deathAnimationTime/frameTimeDiff.dt)) ;
+            particle.position.translate(translationVector)
+            explosion.moveTo(this.gridAbscissa(particle.position.x - this.heroCenterXPosition)+2, this.gridOrdinate(particle.position.y + this.heroAjustYPosition))
+            explosion.arc(this.gridAbscissa(particle.position.x - this.heroCenterXPosition), this.gridOrdinate(particle.position.y + this.heroAjustYPosition), 2, 0, 2 * Math.PI);
+            explosion.closePath() ;
+        })
+
+        this.drawSquareNeonStyle(explosion,243,13,21,0.5) ;
+
+        
+    }
+
     drawBackGround() {
+        /*  bacground scrolling
+        
+            we use to image city and city reverse which is the same but reverse. This way, when concatenate, 
+            there is "continuity" between the two images. Thus the gamer see the image scrolling in the following order :
+            city / city-reverse / city / city-reverse etc...
+
+            There is only two image but we consider there is as many as necessary not enumerate image by 0,1,2,3 ...
+            image number =0 mod 2 are city image, and city-revrse in the contrary
+
+            using this.backGroundTimeScroll and backgroundSpeed, we check what image see at instant t. for example
+            city/cityReverse and draw them according to there order, and there position due to scrolling.
+        */
         let ratio =  this.backgroundImageCity.width /this.backgroundImageCity.height ;
         let imageHeight = this.ctxBack.canvas.height ;
         let imageWidth = imageHeight * ratio
+            // keep image intial ratio
         this.backGroundTimeScroll +=  frameTimeDiff.dt * this.backgroundSpeed ;
+            // add time with last frame to backGroundTimeScroll
         let xPosition = Math.floor(this.backGroundTimeScroll/imageWidth) ;
+            // compute the number of image we see in first.
         this.ctxBack.clearRect(0,0,this.ctxBack.canvas.width,this.ctxBack.canvas.height  )
         this.ctxBack.save();
         this.ctxBack.translate(-this.backGroundTimeScroll, 0);
         if(xPosition%2 == 0) {
+                // if the first image is = 0 mod 2, it is city, and we draw city before city reverse
             this.ctxBack.drawImage(this.backgroundImageCity,xPosition*imageWidth,0,imageWidth ,imageHeight)
             this.ctxBack.drawImage(this.backgroundImageCityReverse,(xPosition+1)*imageWidth,0,imageWidth ,imageHeight)
         } else {
@@ -1190,15 +1257,17 @@ class drawing {
 }
 
 
-    /*  Game progress 
-    
-        Gather function which gover the game progress. It is not organize in classes because recursivity seems not work 
-        in method, and recursivity is essential for timeout use
-    */
+/*****************************************************************************************
+ *  Game progress
+ * 
+ *  Gather functions which gover the game progress. It is not organize in classes because 
+ *  recursivity seems not work in method, and recursivity is essential for timeout use.
+******************************************************************************************/
 
-        // Level construction
+        /*  Level construction
 
-const frameTimeDiff = {lastTime: 0, dt:0, startBegin: 0,endingBegin: 0, lastCheckPoint : 0} ;
+            Function which make level disign of levels. Now, only one level : the user can't choose, but maybe in futur
+        */
 
 function level1(gridInstance, heroInstance) {
     gridInstance.defaultGrid(2000) ;
@@ -1209,33 +1278,32 @@ function level1(gridInstance, heroInstance) {
     let delta = b**2+4*a ;
     let exaliterSpace = ((-b - Math.sqrt(delta))/(2*a)+1/60) * heroInstance.vx ;
     
-    let peakInstance = new peak(31,104, "up") ;
+    let peakInstance = new peak(30,5, "up") ;
     gridInstance.addPeak(peakInstance) ;    
-     //peakInstance = new peak(41,5, "up") ;
-    //gridInstance.addPeak(peakInstance) ; /   
-     /*peakInstance = new peak(42,5, "up") ;
-    gridInstance.addPeak(peakInstance) ;    
-     peakInstance = new peak(43,5, "up") ;
-    gridInstance.addPeak(peakInstance) ;*/
 
     let platformInstance ;
 
-    for (let k = 0; k < 25; k++) {
-        platformInstance = new platform(6.5+k, 104.5) ;
+    /*for (let k = 0; k < 15; k++) {
+        platformInstance = new platform(6.5+k, 60.5) ;
         gridInstance.addPlatform(platformInstance) ;
-    }
+    }*/
 
-    platformInstance = new platform(6, 100+5) ;
-    gridInstance.addPlatform(platformInstance) ;
+    //platformInstance = new platform(6, 100+5) ;
+    //gridInstance.addPlatform(platformInstance) ;
 
     //gridInstance.removeCol(50,54)
 
-    let endingInstance = new ending(180)
+    let endingInstance = new ending(50)
     gridInstance.addEnding(endingInstance)
 
 }
 
+    /*  Game animation
+
+     */
+
 function restart(parameters) {
+    /*  Put the game with initial parameter. It is call when die, and win, or when load the game */
     heroInstance = new hero(parameters[0], parameters[1],
         parameters[2], parameters[3], parameters[4],
         parameters[5], parameters[6],parameters[7], parameters[8]);
@@ -1248,6 +1316,7 @@ function restart(parameters) {
 }
 
 function deathFinish() {
+    /*  TO launch when GAME OVER */
     drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height)
     drawingInstance.setGridPosition(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;
@@ -1256,6 +1325,7 @@ function deathFinish() {
         requestAnimationFrame(deathFinish);
     } else {   
         if (checkPointCounter > 0) {
+            //  if the gamer placed a checkpoint, restart to saved poition
             restart(gameParameters.saved) ;
             heroInstance.isDead = false ;
             heroInstance.hasStarted = true ;
@@ -1272,24 +1342,33 @@ function deathFinish() {
 }
 
 function winFinish() {
+    /*  TO launch when win */
     heroInstance.move(gridInstance) ;
     drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height)
     drawingInstance.setGridPosition(heroInstance) ;
     drawingInstance.drawHero(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;
-    if (Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*2000) {
+    if (Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1500) {
+        /*  slow the hero */
         heroInstance.vx *= 0.90 ;
         heroInstance.vy0 *= 0.90 ;
         requestAnimationFrame(winFinish);
     } else {    
-        frameTimeDiff.startBegin = Date.now() ;
-        backGroundPositionSauv.save = 0 ;
-        level1(gridInstance, heroInstance) ;
-        restart(gameParameters.initial) ;
+        /*  put initial parameters */
+        if(keys.Space) {
+            frameTimeDiff.startBegin = Date.now() ;
+            backGroundPositionSauv.save = 0 ;
+            level1(gridInstance, heroInstance) ;
+            restart(gameParameters.initial) ;
+        } else {
+            requestAnimationFrame(winFinish);
+            drawingInstance.drawPressToRestart(Math.PI*2*(Date.now() - frameTimeDiff.endingBegin)/1000) ;
+        }
     }
 }
 
 function game() {
+    /*  Launch the game and loop until death or win */
 
     frameTimeDiff.dt = (Date.now() - frameTimeDiff.lastTime)/1000 ;
     frameTimeDiff.lastTime = Date.now() ;
@@ -1317,7 +1396,7 @@ function game() {
     } else {
         frameTimeDiff.endingBegin = Date.now() ;
         if (heroInstance.isDead) {
-            heroInstance.setDeathParticule() ;    
+            heroInstance.setDeathParticle() ;    
             deathFinish() ;
         } else {
             winFinish()   
@@ -1326,7 +1405,11 @@ function game() {
     }
 }
 
+    /*  Gamer interactions  
+     */
+
 function addCheckPoint() {
+    /*  add a checkpoint to current hero position */
     gameParameters.saved = [
         [heroInstance.body.center.x, heroInstance.body.center.y],
         heroInstance.body.polarDirection.slice(),
@@ -1341,6 +1424,7 @@ function addCheckPoint() {
 }
 
 function keyEventHandler(event){
+    /*  man,age what happen when the gamer press a key */
     keys[event.code] = event.type === "keydown";
     event.preventDefault();
     if (!heroInstance.hasStarted && keys.Space) {
@@ -1354,30 +1438,58 @@ function keyEventHandler(event){
 }
 
 
+/*****************************************************************************************
+ *  MAIN
+******************************************************************************************/
 
-
-// main
 const keys = {};
-
-const gameParameters = {initial:[[6,106], [1,0], 12, 0, 4, 3, 0, 0, false]}
-let heroInstance = new hero(gameParameters.initial[0], gameParameters.initial[1],
-    gameParameters.initial[2], gameParameters.initial[3], gameParameters.initial[4],
-    gameParameters.initial[5], gameParameters.initial[6],gameParameters.initial[7], gameParameters.initial[8]);
-
-const drawingInstance = new drawing(heroInstance);
+     // to save gamer keyboard interaction
+const frameTimeDiff = {
+    lastTime: 0,
+        // time of last frame
+    dt:0, 
+        // in general now() - lastTime
+    startBegin: 0,
+        // time of the start of a game
+    endingBegin: 0, 
+        // begning of the ending. reference to ending animation
+    lastCheckPoint : 0
+        // time of last checkpoint. mandatory parameter to reinitialisate game as it as when checkpoint
+} ;
+    //  time to management game death progress
 
 const checkPointValue =  {} ;
+    // save of checkpoint value to use when restart to a checkpoint
 
-const backGroundPositionSauv = {save:0} ;
+const backGroundPositionSauv = {save: 0} ;
+    //  save of inital position of the background : at begning of the game, or when checkpoint
 let checkPointCounter = 0 ;
+    // use to plot the number of checkpoint use by the customer
 
-let gridInstance = new grid() ;
-level1(gridInstance, heroInstance) ;
+const gameParameters = {initial:[[6,5.5], [1,0], 12, 0, 4, 3, 0, 0, false]}
+    // initial hero parameters. Complete by a saved state when checkpoint
+
+let heroInstance ; 
+    // save memory for hero object
+
+let drawingInstance ;
+    // save memory for drawing object
+
+let gridInstance  ;
 
 function AtLoad() {
     /* When the page is load, we begin by restart the game (function is called restart and not start 
     because it is equaly use after death or checkpoint) */
-    checkPointValue.checkpoint = new checkPoint(heroInstance)
+    heroInstance = new hero(gameParameters.initial[0], gameParameters.initial[1],
+        gameParameters.initial[2], gameParameters.initial[3], gameParameters.initial[4],
+        gameParameters.initial[5], gameParameters.initial[6],gameParameters.initial[7], gameParameters.initial[8]);
+        // construct hero
+    drawingInstance = new drawing(heroInstance)
+    gridInstance = new grid() ;
+    level1(gridInstance, heroInstance) ;
+
+    checkPointValue.checkpoint = new checkPoint(heroInstance) ;
+
     restart(gameParameters.initial) ;
 }
 
