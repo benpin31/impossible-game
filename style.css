@@ -24,7 +24,6 @@ body {
 }
 
 #canvas-background {
-    background-color:#b2ceb240;
     margin: 0 0;
     z-index: 1;
     display: block;

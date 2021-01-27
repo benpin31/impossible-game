@@ -580,6 +580,7 @@ class hero {
         this.t = t ; // counter of time when the hero begin jumping or falling in order to use equation. must be 0 at the begning of a jump or fall
         this.isJumping = isJumping ; 
             // use to avoid the gamer to do multiple jump, when jump, it become true and become false only when the hero land 
+        this.startJumpPosition = this.body.center.copy() ;
     
         /*  hero status 
         
@@ -786,7 +787,19 @@ class hero {
         if (!this.isDead) {
             //  update some parameters following contact nature after move
             if (floorContactElementCenter.length > 0) {
-                let newCenter = new point(this.body.center.x, maxFloorContactCenter+1) ;
+                let newXPosition ;
+                if (this.isJumping) {
+                    let a = -this.g/2 ;
+                    let b = this.vy0 - this.g * (this.t - dt);
+                    let c = maxFloorContactCenter+1 - this.body.center.y ;
+                    let delta = b**2-4*a*c ;
+                    newXPosition = this.body.center.x -((-b - Math.sqrt(delta))/(2*a)) * this.vx ;
+                } else {
+                    newXPosition = this.body.center.x ;
+                }
+
+
+                let newCenter = new point(newXPosition, maxFloorContactCenter+1) ;
                 let translateVector = new vector(this.body.center, newCenter) ;
                 this.translate(translateVector) ;
                     // if the hero if below the roof, e replace it on it
@@ -800,7 +813,7 @@ class hero {
                 this.isJumping = false ; // the gamer can jump
             } else {
                 this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // no compensation by newton 3rd law
-                this.rotate(-Math.PI/(1/frameTimeDiff.dt * this.xJump/(2*this.vx))) ; // to look pretty : the hero rotate when not on a roof
+                this.rotate(-Math.PI/((1/frameTimeDiff.dt * this.xJump/(2*this.vx))+2)) ; // to look pretty : the hero rotate when not on a roof
                 this.isJumping = true ; // can't jump before the end of the jump /fall
             }
         }  
@@ -814,6 +827,7 @@ class hero {
             this.g = (2*this.yJump)/((this.xJump/(2*this.vx))**2) ; // no compensation by newton 3rd law
             this.vy0 = (2*this.yJump)/(this.xJump/(2*this.vx)) ; // to look pretty : the hero rotate when not on a roof
             this.t = 0; // at the begning of a jump, t must be = 0 in order to the equation are ok
+            this.startJumpPosition = this.body.center.copy() ;
         }
     }
 
@@ -1110,7 +1124,7 @@ class drawing {
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[2].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[2].y + this.heroAjustYPosition));
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[3].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[3].y + this.heroAjustYPosition));
         heroBody.closePath();
-        this.drawSquareNeonStyle(heroBody,159,76,147,0.5)
+        this.drawSquareNeonStyle(heroBody,254, 1, 154,0.5)
 
     }
 
@@ -1154,6 +1168,8 @@ class drawing {
                         endingDraw.lineTo(this.gridAbscissa(element.col-1/2 - this.heroCenterXPosition), this.gridOrdinate(6 + this.heroAjustYPosition))
                         endingDraw.lineTo(this.gridAbscissa(element.col - this.heroCenterXPosition), this.gridOrdinate(6 + this.heroAjustYPosition))
                         endingDraw.lineTo(this.gridAbscissa(element.col-1/2 - this.heroCenterXPosition), this.gridOrdinate(14 + this.heroAjustYPosition))
+                        endingDraw.lineTo(this.gridAbscissa(element.col+3/2 - this.heroCenterXPosition), this.gridOrdinate(14 + this.heroAjustYPosition))
+
                         checkPointDraw.closePath();  
                         endingPosition = element.col ;
                     }
@@ -1162,7 +1178,7 @@ class drawing {
         })
 
             // print elements
-        this.drawSquareNeonStyle(peakDraw,243,13,21,0.5) ;
+        this.drawSquareNeonStyle(peakDraw,255,7,58,0.5) ;
         this.drawSquareNeonStyle(platformDraw,255, 254, 242,0.5) ;
         this.drawSquareNeonStyle(checkPointDraw,224,231,34,0.5) ;
         if(Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1500 || 
@@ -1190,7 +1206,7 @@ class drawing {
 
     drawPressToRestart(t) {
         this.ctx.shadowColor = "rgba(57, 255, 20)";
-        this.ctx.fillStyle =  "rgba(57, 255, 20,"+(Math.sin(t)/2+0.5)+")" ;
+        this.ctx.fillStyle =  "rgba(57, 255, 20,"+(Math.sin(t)/3+2/3)+")" ;
         this.ctx.font = "60px calibri";
         this.ctx.shadowBlur = 20;
         this.ctx.textAlign = "center";
@@ -1213,7 +1229,7 @@ class drawing {
             explosion.closePath() ;
         })
 
-        this.drawSquareNeonStyle(explosion,243,13,21,0.5) ;
+        this.drawSquareNeonStyle(explosion,254, 1, 154,0.5) ;
 
         
     }
@@ -1263,40 +1279,6 @@ class drawing {
  *  Gather functions which gover the game progress. It is not organize in classes because 
  *  recursivity seems not work in method, and recursivity is essential for timeout use.
 ******************************************************************************************/
-
-        /*  Level construction
-
-            Function which make level disign of levels. Now, only one level : the user can't choose, but maybe in futur
-        */
-
-function level1(gridInstance, heroInstance) {
-    gridInstance.defaultGrid(2000) ;
-
-
-    let a = -(2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))**2)/2 ;
-    let b = (2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))) ;
-    let delta = b**2+4*a ;
-    let exaliterSpace = ((-b - Math.sqrt(delta))/(2*a)+1/60) * heroInstance.vx ;
-    
-    let peakInstance = new peak(30,5, "up") ;
-    gridInstance.addPeak(peakInstance) ;    
-
-    let platformInstance ;
-
-    /*for (let k = 0; k < 15; k++) {
-        platformInstance = new platform(6.5+k, 60.5) ;
-        gridInstance.addPlatform(platformInstance) ;
-    }*/
-
-    //platformInstance = new platform(6, 100+5) ;
-    //gridInstance.addPlatform(platformInstance) ;
-
-    //gridInstance.removeCol(50,54)
-
-    let endingInstance = new ending(50)
-    gridInstance.addEnding(endingInstance)
-
-}
 
     /*  Game animation
 
@@ -1350,8 +1332,9 @@ function winFinish() {
     drawingInstance.drawGrid(gridInstance, heroInstance) ;
     if (Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1500) {
         /*  slow the hero */
-        heroInstance.vx *= 0.90 ;
-        heroInstance.vy0 *= 0.90 ;
+        //heroInstance.vx *= 0.90 ;
+        //heroInstance.vy0 = (2*heroInstance.yJump)/(heroInstance.xJump/(2*heroInstance.vx)) //*= 0.90 ;
+        frameTimeDiff.dt *= 0.95 ;
         requestAnimationFrame(winFinish);
     } else {    
         /*  put initial parameters */
@@ -1435,6 +1418,48 @@ function keyEventHandler(event){
         frameTimeDiff.startBegin = Date.now() ;
         game() ;
     }
+}
+
+    /*  Level construction
+
+        Function which make level disign of levels. Now, only one level : the user can't choose, but maybe in futur
+    */
+
+   function level1(gridInstance, heroInstance) {
+    gridInstance.defaultGrid(2000) ;
+
+
+    let a = -(2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))**2)/2 ;
+    let b = (2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))) ;
+    let delta = b**2+4*a ;
+    let exaliterSpace = ((-b - Math.sqrt(delta))/(2*a)) * heroInstance.vx ;
+    
+    let peakInstance = new peak(30,5, "up") ;
+    /*gridInstance.addPeak(peakInstance) ;   
+    peakInstance = new peak(60,5, "up") ;
+    gridInstance.addPeak(peakInstance) ;        
+    peakInstance = new peak(90,5, "up") ;
+    gridInstance.addPeak(peakInstance) ;     
+    peakInstance = new peak(120,5, "up") ;
+    gridInstance.addPeak(peakInstance) ;        
+    peakInstance = new peak(150,5, "up") ;
+    gridInstance.addPeak(peakInstance) ;  */  
+
+    let platformInstance ;
+
+    for (let k = 0; k < 15; k++) {
+        platformInstance = new platform(20+(k*exaliterSpace), k+5.5) ;
+        gridInstance.addPlatform(platformInstance) ;
+    }
+
+    //platformInstance = new platform(6, 100+5) ;
+    //gridInstance.addPlatform(platformInstance) ;
+
+    //gridInstance.removeCol(50,54)
+
+    let endingInstance = new ending(120)
+    gridInstance.addEnding(endingInstance)
+
 }
 
 
