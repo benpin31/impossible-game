@@ -1101,39 +1101,40 @@ class drawing {
         return this.height-y*this.unity ;
     }
 
-    drawSquareNeonStyle(elementToDraw,r,g,b,alpha) {
+    drawSquareNeonStyle(elementToDraw,r,g,b) {
         /* Draw elements in neon style   */
-        this.ctx.shadowColor = "rgba(" + r +"," + g + "," + b +")";
-        this.ctx.shadowBlur = 10;
-        this.ctx.strokeStyle = "rgba(" + r +"," + g + "," + b + "," + alpha +")" ;
-        this.ctx.lineWidth=6;
+        this.ctx.strokeStyle = "rgba(" + r +"," + g + "," + b + "," + 0.2 +")" ;
+        this.ctx.lineWidth=13;
         this.ctx.stroke(elementToDraw) ;
-        this.ctx.lineWidth=4.5;
+        this.ctx.strokeStyle = "rgba(" + r +"," + g + "," + b + "," + 0.2 +")" ;
+        this.ctx.lineWidth=9;
+        this.ctx.strokeStyle = "rgba(" + r +"," + g + "," + b + "," + 0.2 +")" ;
         this.ctx.stroke(elementToDraw) ;
-        this.ctx.lineWidth=3;
+        this.ctx.strokeStyle = "rgba(" + r +"," + g + "," + b + "," + 0.4 +")" ;
+        this.ctx.lineWidth=7;
         this.ctx.stroke(elementToDraw) ;
-        this.ctx.lineWidth=1.5;
+        this.ctx.strokeStyle = "rgba(" + r +"," + g + "," + b + "," + 1 +")" ;
+        this.ctx.lineWidth=5;
         this.ctx.stroke(elementToDraw) ;
     }
 
     drawTextNeonStyle(text,r,g,b,alpha, fontSize, position, align = "center") {
-        this.ctx.shadowColor = "rgba(" + r +"," + g + "," + b +")";
-        this.ctx.shadowBlur = 20;
+        this.ctx.shadowColor = "rgba(" + r +"," + g + "," + b +")"
+        this.ctx.shadowBlur = 10
+        this.ctx.font = fontSize + "px Orbitron";
         this.ctx.fillStyle = "rgba(" + r +"," + g + "," + b + "," + alpha +")" ;
         this.ctx.textAlign = align;
-        this.ctx.font = fontSize + "px Orbitron";
         this.ctx.fillText(text, this.gridAbscissa(position[0] - this.heroCenterXPosition), this.gridOrdinate(position[1] + this.heroAjustYPosition));
-        this.ctx.font = "20px Orbitron";     
+        this.ctx.shadowBlur = 0
     }
 
     drawMovingtext(text, r, g, b, alpha, fontSize, position1, position2, heroInstance) {
-        if (position1[0] <= heroInstance.body.center.x + 40 & position1[0] > heroInstance.body.center.x) {
-            console.log("toto")
+        if (position1[0] <= heroInstance.body.center.x + 40 & position1[0] > heroInstance.body.center.x-5) {
             this.drawTextNeonStyle(text,r,g,b,alpha, fontSize, position1, "left") ;
         } else if (position2[0] > heroInstance.body.center.x && position1[0] < heroInstance.body.center.x) {
-            this.drawTextNeonStyle(text,r,g,b,alpha, fontSize, [heroInstance.body.center.x,position1[1]], "left") ;
+            this.drawTextNeonStyle(text,r,g,b,alpha, fontSize, [heroInstance.body.center.x -5,position1[1]], "left") ;
         } else if (position2[0] > heroInstance.body.center.x -40) {
-            this.drawTextNeonStyle(text,r,g,b,alpha, fontSize, position2, "left") ;
+            this.drawTextNeonStyle(text,r,g,b,alpha, fontSize, [position2[0] -5,position2[1]], "left") ;
         }
     }
 
@@ -1145,7 +1146,7 @@ class drawing {
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[2].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[2].y + this.heroAjustYPosition));
         heroBody.lineTo(this.gridAbscissa(heroInstance.body.vertices[3].x - this.heroCenterXPosition), this.gridOrdinate(heroInstance.body.vertices[3].y + this.heroAjustYPosition));
         heroBody.closePath();
-        this.drawSquareNeonStyle(heroBody,254, 1, 154,0.5)
+        this.drawSquareNeonStyle(heroBody,254, 1, 154)
 
     }
 
@@ -1199,17 +1200,18 @@ class drawing {
         })
 
             // print elements
-        this.drawSquareNeonStyle(peakDraw,255,7,58,0.5) ;
-        this.drawSquareNeonStyle(platformDraw,255, 254, 242,0.5) ;
-        this.drawSquareNeonStyle(checkPointDraw,224,231,34,0.5) ;
-        this.drawMovingtext("Press Space to begin",224,231,34,0.5, 80, [0,16], [50,16], heroInstance) ;
-        this.drawMovingtext("Press Space to jump",224,231,34,0.5, 80, [80,16], [120,16], heroInstance) ;
-        this.drawMovingtext("Maintain Space to jump",224,231,34,0.5, 80, [150,16], [190,16], heroInstance) ;
+        this.drawSquareNeonStyle(peakDraw,255,7,58) ;
+        this.drawSquareNeonStyle(platformDraw,255, 254, 242) ;
+        this.drawSquareNeonStyle(checkPointDraw,224,231,34) ;
+        this.drawMovingtext("Press Space to begin",70,102,255,1, 60, [0,16], [10,16], heroInstance) ;
+        this.drawMovingtext("Press Space to jump",70,102,255,1, 60, [50,16], [80,16], heroInstance) ;
+        this.drawMovingtext("Maintain Space to chain jump",70,102,255,1, 60, [110,16], [140,16], heroInstance) ;
+        this.drawMovingtext("Press S to add checkpoint",70,102,255,1, 60, [170,16], [200,16], heroInstance) ;
 
         if(Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1500 || 
         (!heroInstance.isDead && !heroInstance.haveFinished)) {
             // not draw anymor when finish animation is finihed
-            this.drawSquareNeonStyle(endingDraw,57, 255, 20,0.5) ;
+            this.drawSquareNeonStyle(endingDraw,57, 255, 20) ;
             if(endingPosition != undefined) {
                 this.drawTextNeonStyle("FINISHED !!",57, 255, 20,1, 80, [endingPosition+1/2, 16])   
                 if(checkPointCounter > 0) {
@@ -1221,22 +1223,19 @@ class drawing {
 
     drawCheckpointCounter() {
         // ckecpoint counter if place on top left on background canvas
-        this.ctxBack.shadowColor = "rgba(224,231,34)";
-        this.ctxBack.fillStyle = "rgba(224,231,34,1)" ;
         this.ctxBack.font = "80px Orbitron";
-        this.ctxBack.shadowBlur = 20;
+        this.ctxBack.shadowColor = "rgba(224,231,34)";
+        this.ctxBack.shadowBlur = 20
+        this.ctxBack.fillStyle = "rgba(224,231,34,1)" ;
         this.ctxBack.fillText(checkPointCounter, 15, 85);
-        this.ctxBack.shadowBlur = 0;
+        this.ctxBack.shadowBlur = 0
     }
 
     drawPressToRestart(t) {
-        this.ctx.shadowColor = "rgba(57, 255, 20)";
+        this.ctx.font = "40px Orbitron";
         this.ctx.fillStyle =  "rgba(57, 255, 20,"+(Math.sin(t)/3+2/3)+")" ;
-        this.ctx.font = "60px Orbitron";
-        this.ctx.shadowBlur = 20;
         this.ctx.textAlign = "center";
         this.ctx.fillText("Press Space to start again", this.ctx.canvas.width/2, this.ctx.canvas.height/2);
-        this.ctx.shadowBlur = 0;
     }
 
     
@@ -1254,7 +1253,7 @@ class drawing {
             explosion.closePath() ;
         })
 
-        this.drawSquareNeonStyle(explosion,254, 1, 154,0.5) ;
+        this.drawSquareNeonStyle(explosion,254, 1, 154) ;
 
         
     }
@@ -1281,18 +1280,15 @@ class drawing {
         let xPosition = Math.floor(this.backGroundTimeScroll/imageWidth) ;
             // compute the number of image we see in first.
         this.ctxBack.clearRect(0,0,this.ctxBack.canvas.width,this.ctxBack.canvas.height  )
-        this.ctxBack.save();
-        this.ctxBack.translate(-this.backGroundTimeScroll, 0);
+
         if(xPosition%2 == 0) {
-                // if the first image is = 0 mod 2, it is city, and we draw city before city reverse
-            this.ctxBack.drawImage(this.backgroundImageCity,xPosition*imageWidth,0,imageWidth ,imageHeight)
-            this.ctxBack.drawImage(this.backgroundImageCityReverse,(xPosition+1)*imageWidth,0,imageWidth ,imageHeight)
+            // if the first image is = 0 mod 2, it is city, and we draw city before city reverse
+            this.ctxBack.drawImage(this.backgroundImageCity,xPosition*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)
+            this.ctxBack.drawImage(this.backgroundImageCityReverse,(xPosition+1)*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)
         } else {
-            this.ctxBack.drawImage(this.backgroundImageCityReverse,xPosition*imageWidth,0,imageWidth ,imageHeight)
-            this.ctxBack.drawImage(this.backgroundImageCity,(xPosition+1)*imageWidth,0,imageWidth ,imageHeight)       
-                      }
-      
-         this.ctxBack.restore();
+            this.ctxBack.drawImage(this.backgroundImageCityReverse,xPosition*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)
+            this.ctxBack.drawImage(this.backgroundImageCity,(xPosition+1)*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)       
+        }
 
     }
 }
@@ -1380,6 +1376,8 @@ function game() {
 
     frameTimeDiff.dt = (Date.now() - frameTimeDiff.lastTime)/1000 ;
     frameTimeDiff.lastTime = Date.now() ;
+
+    console.log(frameTimeDiff.dt)
 
     if (!heroInstance.isDead && !heroInstance.haveFinished) {
         if(keys.Space && (Date.now() - frameTimeDiff.startBegin > 500)) {
@@ -1472,17 +1470,43 @@ function keyEventHandler(event){
 
     let platformInstance ;
 
-    /*for (let k = 0; k < 30; k++) {
-        platformInstance = new platform(20+(k*exaliterSpace), k+5.5) ;
+    for (let k = 0; k < 4; k++) {
+        peakInstance = new peak(70+(8*k), 5, "up") ;
+        gridInstance.addPlatform(peakInstance) ;
+    }
+
+    for (let k = 0; k < 8; k++) {
+        platformInstance = new platform(129.5+(4*k), 5.5) ;
         gridInstance.addPlatform(platformInstance) ;
-    }*/
+    }
+
+    gridInstance.removeCol(Math.floor(189.5),Math.floor(189.5+(exaliterSpace*3)+15)+1)
+    for (let k = 0; k < 3; k++) {
+        platformInstance = new platform(189.5+(exaliterSpace*k), 5.5+k) ;
+        gridInstance.addPlatform(platformInstance) ;
+    }
+    platformInstance = new platform(189.5+(exaliterSpace*2)+4, 5.5+2) ;
+    gridInstance.addPlatform(platformInstance) ;
+    platformInstance = new platform(189.5+(exaliterSpace*2)+7, 5.5+1) ;
+    gridInstance.addPlatform(platformInstance) ;
+    peakInstance = new peak(190+(exaliterSpace*2)+8, 5, "up") ;
+    gridInstance.addPlatform(peakInstance) ;
+    platformInstance = new platform(189.5+(exaliterSpace*3)+7, 5.5+2) ;
+    gridInstance.addPlatform(platformInstance) ;
+    platformInstance = new platform(189.5+(exaliterSpace*3)+11, 5.5+2) ;
+    gridInstance.addPlatform(platformInstance) ;
+    platformInstance = new platform(189.5+(exaliterSpace*3)+15, 5.5+1) ;
+    gridInstance.addPlatform(platformInstance) ;
+
+
+
 
     //platformInstance = new platform(6, 100+5) ;
     //gridInstance.addPlatform(platformInstance) ;
 
     //gridInstance.removeCol(50,54)
 
-    let endingInstance = new ending(250)
+    let endingInstance = new ending(270)
     gridInstance.addEnding(endingInstance)
 
 }
@@ -1540,7 +1564,9 @@ function AtLoad() {
 
     checkPointValue.checkpoint = new checkPoint(heroInstance) ;
 
-    restart(gameParameters.initial) ;
+    drawingInstance.drawMovingtext("Press Space to begin",0,0,0,0, 80, [0,16], [50,16], heroInstance) ;
+    setTimeout(function() {restart(gameParameters.initial)}, 1000) ;
+        
 }
 
 window.onload = AtLoad ;
