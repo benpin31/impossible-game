@@ -688,6 +688,11 @@ class hero {
         })
             // save previous foot to verify if the hero land (see method footContactWithRoof)
 
+        let tSauv = this.t ;
+        let yPosSauv = this.body.center.y ;
+        let xPosSauv = this.body.center.x ;
+            // use to rectify position when landing
+
         let dt = frameTimeDiff.dt
             // time interval between to frames
 
@@ -785,16 +790,25 @@ class hero {
         }
 
         if (!this.isDead) {
-            //  update some parameters following contact nature after move
             if (floorContactElementCenter.length > 0) {
+                // begin by adjust x position of the hero when contact
                 let newXPosition ;
                 if (this.isJumping) {
+                    // If landing, the hero could be below the roof. We begin by rectify its position in searching dt such 
+                    // the ordintate hero psition when landing is maxFloorContactCenter+1 y positin
                     let a = -this.g/2 ;
-                    let b = this.vy0 - this.g * (this.t - dt);
-                    let c = maxFloorContactCenter+1 - this.body.center.y ;
+                    let b = this.vy0 - this.g * tSauv;
+                    let c = -(maxFloorContactCenter+1 - yPosSauv) ;
                     let delta = b**2-4*a*c ;
-                    newXPosition = this.body.center.x -((-b - Math.sqrt(delta))/(2*a)) * this.vx ;
+                    let newDt = Math.max((-b - Math.sqrt(delta))/(2*a), (-b + Math.sqrt(delta))/(2*a))
+                    console.log((-b - Math.sqrt(delta))/(2*a)) ;
+                    console.log((-b + Math.sqrt(delta))/(2*a)) ;
+                    console.log(newDt) ;
+                    console.log(c)
+
+                    newXPosition = xPosSauv + newDt * this.vx ;
                 } else {
+                    // if just moving, no modification
                     newXPosition = this.body.center.x ;
                 }
 
@@ -1111,9 +1125,9 @@ class drawing {
         this.ctx.shadowBlur = 20;
         this.ctx.fillStyle = "rgba(" + r +"," + g + "," + b + "," + alpha +")" ;
         this.ctx.textAlign = "center";
-        this.ctx.font = fontSize + "px calibri";
+        this.ctx.font = fontSize + "px Orbitron";
         this.ctx.fillText(text, this.gridAbscissa(position[0] - this.heroCenterXPosition), this.gridOrdinate(position[1] + this.heroAjustYPosition));
-        this.ctx.font = "20px calibri";     
+        this.ctx.font = "20px Orbitron";     
     }
 
     drawHero(heroInstance) {
@@ -1198,7 +1212,7 @@ class drawing {
         // ckecpoint counter if place on top left on background canvas
         this.ctxBack.shadowColor = "rgba(224,231,34)";
         this.ctxBack.fillStyle = "rgba(224,231,34,1)" ;
-        this.ctxBack.font = "80px calibri";
+        this.ctxBack.font = "80px Orbitron";
         this.ctxBack.shadowBlur = 20;
         this.ctxBack.fillText(checkPointCounter, 15, 85);
         this.ctxBack.shadowBlur = 0;
@@ -1207,7 +1221,7 @@ class drawing {
     drawPressToRestart(t) {
         this.ctx.shadowColor = "rgba(57, 255, 20)";
         this.ctx.fillStyle =  "rgba(57, 255, 20,"+(Math.sin(t)/3+2/3)+")" ;
-        this.ctx.font = "60px calibri";
+        this.ctx.font = "60px Orbitron";
         this.ctx.shadowBlur = 20;
         this.ctx.textAlign = "center";
         this.ctx.fillText("Press Space to start again", this.ctx.canvas.width/2, this.ctx.canvas.height/2);
@@ -1355,6 +1369,7 @@ function game() {
 
     frameTimeDiff.dt = (Date.now() - frameTimeDiff.lastTime)/1000 ;
     frameTimeDiff.lastTime = Date.now() ;
+    //console.log(frameTimeDiff.dt) ;
 
     if (!heroInstance.isDead && !heroInstance.haveFinished) {
         if(keys.Space && (Date.now() - frameTimeDiff.startBegin > 500)) {
@@ -1447,7 +1462,7 @@ function keyEventHandler(event){
 
     let platformInstance ;
 
-    for (let k = 0; k < 15; k++) {
+    for (let k = 0; k < 30; k++) {
         platformInstance = new platform(20+(k*exaliterSpace), k+5.5) ;
         gridInstance.addPlatform(platformInstance) ;
     }
@@ -1491,7 +1506,7 @@ const backGroundPositionSauv = {save: 0} ;
 let checkPointCounter = 0 ;
     // use to plot the number of checkpoint use by the customer
 
-const gameParameters = {initial:[[6,5.5], [1,0], 12, 0, 4, 3, 0, 0, false]}
+const gameParameters = {initial:[[6,5.5], [1,0], 10, 0, 4, 3, 0, 0, false]}
     // initial hero parameters. Complete by a saved state when checkpoint
 
 let heroInstance ; 
