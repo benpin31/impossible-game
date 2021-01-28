@@ -801,10 +801,6 @@ class hero {
                     let c = -(maxFloorContactCenter+1 - yPosSauv) ;
                     let delta = b**2-4*a*c ;
                     let newDt = Math.max((-b - Math.sqrt(delta))/(2*a), (-b + Math.sqrt(delta))/(2*a))
-                    console.log((-b - Math.sqrt(delta))/(2*a)) ;
-                    console.log((-b + Math.sqrt(delta))/(2*a)) ;
-                    console.log(newDt) ;
-                    console.log(c)
 
                     newXPosition = xPosSauv + newDt * this.vx ;
                 } else {
@@ -1120,14 +1116,25 @@ class drawing {
         this.ctx.stroke(elementToDraw) ;
     }
 
-    drawTextNeonStyle(text,r,g,b,alpha, fontSize, position) {
+    drawTextNeonStyle(text,r,g,b,alpha, fontSize, position, align = "center") {
         this.ctx.shadowColor = "rgba(" + r +"," + g + "," + b +")";
         this.ctx.shadowBlur = 20;
         this.ctx.fillStyle = "rgba(" + r +"," + g + "," + b + "," + alpha +")" ;
-        this.ctx.textAlign = "center";
+        this.ctx.textAlign = align;
         this.ctx.font = fontSize + "px Orbitron";
         this.ctx.fillText(text, this.gridAbscissa(position[0] - this.heroCenterXPosition), this.gridOrdinate(position[1] + this.heroAjustYPosition));
         this.ctx.font = "20px Orbitron";     
+    }
+
+    drawMovingtext(text, r, g, b, alpha, fontSize, position1, position2, heroInstance) {
+        if (position1[0] <= heroInstance.body.center.x + 40 & position1[0] > heroInstance.body.center.x) {
+            console.log("toto")
+            this.drawTextNeonStyle(text,r,g,b,alpha, fontSize, position1, "left") ;
+        } else if (position2[0] > heroInstance.body.center.x && position1[0] < heroInstance.body.center.x) {
+            this.drawTextNeonStyle(text,r,g,b,alpha, fontSize, [heroInstance.body.center.x,position1[1]], "left") ;
+        } else if (position2[0] > heroInstance.body.center.x -40) {
+            this.drawTextNeonStyle(text,r,g,b,alpha, fontSize, position2, "left") ;
+        }
     }
 
     drawHero(heroInstance) {
@@ -1195,6 +1202,10 @@ class drawing {
         this.drawSquareNeonStyle(peakDraw,255,7,58,0.5) ;
         this.drawSquareNeonStyle(platformDraw,255, 254, 242,0.5) ;
         this.drawSquareNeonStyle(checkPointDraw,224,231,34,0.5) ;
+        this.drawMovingtext("Press Space to begin",224,231,34,0.5, 80, [0,16], [50,16], heroInstance) ;
+        this.drawMovingtext("Press Space to jump",224,231,34,0.5, 80, [80,16], [120,16], heroInstance) ;
+        this.drawMovingtext("Maintain Space to jump",224,231,34,0.5, 80, [150,16], [190,16], heroInstance) ;
+
         if(Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1500 || 
         (!heroInstance.isDead && !heroInstance.haveFinished)) {
             // not draw anymor when finish animation is finihed
@@ -1321,7 +1332,7 @@ function deathFinish() {
         requestAnimationFrame(deathFinish);
     } else {   
         if (checkPointCounter > 0) {
-            //  if the gamer placed a checkpoint, restart to saved poition
+            //  if the gamer placed a checkpoint, restart to saved position
             restart(gameParameters.saved) ;
             heroInstance.isDead = false ;
             heroInstance.hasStarted = true ;
@@ -1369,7 +1380,6 @@ function game() {
 
     frameTimeDiff.dt = (Date.now() - frameTimeDiff.lastTime)/1000 ;
     frameTimeDiff.lastTime = Date.now() ;
-    //console.log(frameTimeDiff.dt) ;
 
     if (!heroInstance.isDead && !heroInstance.haveFinished) {
         if(keys.Space && (Date.now() - frameTimeDiff.startBegin > 500)) {
@@ -1462,17 +1472,17 @@ function keyEventHandler(event){
 
     let platformInstance ;
 
-    for (let k = 0; k < 30; k++) {
+    /*for (let k = 0; k < 30; k++) {
         platformInstance = new platform(20+(k*exaliterSpace), k+5.5) ;
         gridInstance.addPlatform(platformInstance) ;
-    }
+    }*/
 
     //platformInstance = new platform(6, 100+5) ;
     //gridInstance.addPlatform(platformInstance) ;
 
     //gridInstance.removeCol(50,54)
 
-    let endingInstance = new ending(120)
+    let endingInstance = new ending(250)
     gridInstance.addEnding(endingInstance)
 
 }
