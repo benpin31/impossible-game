@@ -1391,13 +1391,15 @@ function winFinish() {
     }
 }
 
+let toto = 0 ;
 function game() {
     /*  Launch the game and loop until death or win */
 
     frameTimeDiff.dt = (Date.now() - frameTimeDiff.lastTime)/1000 ;
     frameTimeDiff.lastTime = Date.now() ;
 
-    console.log(frameTimeDiff.dt)
+    //console.log(frameTimeDiff.dt)
+        // to check frame rate
     if (!heroInstance.isDead && !heroInstance.haveFinished) {
         if(keys.Space && (Date.now() - frameTimeDiff.startBegin > 500)) {
             heroInstance.jump() ;
@@ -1425,6 +1427,10 @@ function game() {
             heroInstance.setDeathParticle() ; 
             deathFinish() ;
         } else {
+            if (toto === 0) {
+                console.log(drawingInstance.sound.backGroundMusic.currentTime)
+                toto++
+            }
             winFinish()   
         }
 
