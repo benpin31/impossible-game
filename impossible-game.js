@@ -875,9 +875,9 @@ class platform {
         of the hero to test collisions
     */
     constructor(x, y) {
-        /* x,y are the coordinates of the center of the platform */
+        /* x,y are the coordinates of the lowest leftest point of the platform */
         this.col = Math.floor(x) ;
-        let platformCenter = new point(x, y) ;
+        let platformCenter = new point(x+1/2, y+1/2) ;
         this.platform = new square(platformCenter,[1,0]) ;
         this.roof = new polygon([this.platform.vertices[2], this.platform.vertices[3]])
     }
@@ -976,22 +976,29 @@ class grid {
         this.grid = [] ;
     }
 
-    addPlatform(platformInstance) {
+    addPlatform(x,y) {
+        let platformInstance = new platform(x,y) ;
         /*  Given a platform, place a platform in the grid */
         if (this.grid[platformInstance.col] != undefined) {
             this.grid[platformInstance.col].push(platformInstance) ;
         } else {
             this.grid[platformInstance.col] = [platformInstance] ;
         }
+
+        return [x,y]
     } 
 
-    addPeak(peakInstance) {
+    addPeak(x,y, direction) {
+        let peakInstance = new peak(x,y, direction) ;
         /*  Given a peak, place a platform in the grid */
         if (this.grid[peakInstance.col] != undefined) {
             this.grid[peakInstance.col].push(peakInstance) ;
         } else {
             this.grid[peakInstance.col] = [peakInstance] ;
         }
+
+        return [x,y]
+
     }
 
     addEnding(endingInstance) {
@@ -1022,10 +1029,8 @@ class grid {
     defaultGrid(size) {
         /* create a default frid with a default ground of platform on first row. */
         this.grid = [] ;
-        let platformInstance ;
         for (let k = 4 ; k < size ; k++) {
-            platformInstance = new platform(k+1/2,4+1/2) ;
-            this.addPlatform(platformInstance) ;
+            this.addPlatform(k,4) ;
         }
     }
 }
@@ -1076,6 +1081,13 @@ class drawing {
 
         this.backgroundImageCity = document.getElementById("city") ;
         this.backgroundImageCityReverse = document.getElementById("city-reverse") ;
+
+        //         
+        this.sound = {
+            backGroundMusic: document.getElementById('backGroundMusic'),
+            checkpointSaveTime: 0, 
+            deathSound: document.getElementById('deathSound')
+        };
 
     }
 
@@ -1205,7 +1217,7 @@ class drawing {
         this.drawSquareNeonStyle(checkPointDraw,224,231,34) ;
         this.drawMovingtext("Press Space to begin",70,102,255,1, 60, [0,16], [10,16], heroInstance) ;
         this.drawMovingtext("Press Space to jump",70,102,255,1, 60, [50,16], [80,16], heroInstance) ;
-        this.drawMovingtext("Maintain Space to chain jump",70,102,255,1, 60, [110,16], [140,16], heroInstance) ;
+        this.drawMovingtext("Maintain Space to chain jumps",70,102,255,1, 60, [110,16], [140,16], heroInstance) ;
         this.drawMovingtext("Press S to add checkpoint",70,102,255,1, 60, [170,16], [200,16], heroInstance) ;
 
         if(Date.now() - frameTimeDiff.endingBegin < drawingInstance.winAnimationTime*1500 || 
@@ -1320,6 +1332,7 @@ function restart(parameters) {
 
 function deathFinish() {
     /*  TO launch when GAME OVER */
+    drawingInstance.sound.deathSound.play() ;
     drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height)
     drawingInstance.setGridPosition(heroInstance) ;
     drawingInstance.drawGrid(gridInstance, heroInstance) ;
@@ -1333,9 +1346,14 @@ function deathFinish() {
             heroInstance.isDead = false ;
             heroInstance.hasStarted = true ;
             heroInstance.havefinished = false ;
+            drawingInstance.sound.backGroundMusic.pause()
+            drawingInstance.sound.backGroundMusic.currentTime = drawingInstance.sound.checkpointSaveTime ;
+            drawingInstance.sound.backGroundMusic.play() ;
             frameTimeDiff.lastTime = Date.now() ;
             game() ;
         } else {
+            drawingInstance.sound.backGroundMusic.pause()
+            drawingInstance.sound.backGroundMusic.currentTime = 0 ; 
             frameTimeDiff.startBegin = Date.now() ;
             backGroundPositionSauv.save = 0 ;
             level1(gridInstance, heroInstance) ;
@@ -1360,6 +1378,8 @@ function winFinish() {
     } else {    
         /*  put initial parameters */
         if(keys.Space) {
+            drawingInstance.sound.backGroundMusic.pause()
+            drawingInstance.sound.backGroundMusic.currentTime = 0 ; 
             frameTimeDiff.startBegin = Date.now() ;
             backGroundPositionSauv.save = 0 ;
             level1(gridInstance, heroInstance) ;
@@ -1390,6 +1410,8 @@ function game() {
             gridInstance.addCheckPoint(checkPointValue.checkpoint) ;
             frameTimeDiff.lastCheckPoint = Date.now()
             backGroundPositionSauv.save = drawingInstance.backGroundTimeScroll ;
+            drawingInstance.sound.checkpointSaveTime = drawingInstance.sound.backGroundMusic.currentTime ;
+            console.log()
         }
         heroInstance.move(gridInstance) ;
         drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
@@ -1402,7 +1424,7 @@ function game() {
     } else {
         frameTimeDiff.endingBegin = Date.now() ;
         if (heroInstance.isDead) {
-            heroInstance.setDeathParticle() ;    
+            heroInstance.setDeathParticle() ; 
             deathFinish() ;
         } else {
             winFinish()   
@@ -1434,6 +1456,7 @@ function keyEventHandler(event){
     keys[event.code] = event.type === "keydown";
     event.preventDefault();
     if (!heroInstance.hasStarted && keys.Space) {
+        drawingInstance.sound.backGroundMusic.play()
         heroInstance.hasStarted = true ;
         checkPointCounter = 0 ;
         gameParameters.saved = [gameParameters.initial[0].slice(), gameParameters.initial[1].slice(),  gameParameters.initial.slice(2)]
@@ -1448,65 +1471,73 @@ function keyEventHandler(event){
         Function which make level disign of levels. Now, only one level : the user can't choose, but maybe in futur
     */
 
-   function level1(gridInstance, heroInstance) {
-    gridInstance.defaultGrid(2000) ;
+function platformDistance(h, heroInstance) {
+    /*  h is the differnce of height between two successive platform . the function return the optimal distance
+        between the two in order to be able to chain jump*/
+        let a = -(2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))**2)/2 ;
+        let b = (2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))) ;
+        let delta = b**2+4*a*h ;
 
+        return ((-b - Math.sqrt(delta))/(2*a)) * heroInstance.vx ;
+}
 
-    let a = -(2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))**2)/2 ;
-    let b = (2*heroInstance.yJump)/((heroInstance.xJump/(2*heroInstance.vx))) ;
-    let delta = b**2+4*a ;
-    let exaliterSpace = ((-b - Math.sqrt(delta))/(2*a)) * heroInstance.vx ;
-    
-    let peakInstance = new peak(30,5, "up") ;
-    /*gridInstance.addPeak(peakInstance) ;   
-    peakInstance = new peak(60,5, "up") ;
-    gridInstance.addPeak(peakInstance) ;        
-    peakInstance = new peak(90,5, "up") ;
-    gridInstance.addPeak(peakInstance) ;     
-    peakInstance = new peak(120,5, "up") ;
-    gridInstance.addPeak(peakInstance) ;        
-    peakInstance = new peak(150,5, "up") ;
-    gridInstance.addPeak(peakInstance) ;  */  
+function level1(gridInstance, heroInstance) {
+    gridInstance.grid = [] ;
 
-    let platformInstance ;
+    let d1 = platformDistance(1, heroInstance) ;
+    let d0 = 4 ;
+    let dMoins1 = platformDistance(-1, heroInstance) ;
 
-    for (let k = 0; k < 4; k++) {
-        peakInstance = new peak(70+(8*k), 5, "up") ;
-        gridInstance.addPlatform(peakInstance) ;
+    let pos ;
+    let lastPos ;
+
+    for (let k = 0; k < 70; k++) {
+        gridInstance.addPlatform(k, 4) ;
     }
+
+    for (let k = 70; k < 110; k++) {
+        gridInstance.addPlatform(k, 4) ;
+        if((k-70)%8 === 0) {
+            pos = gridInstance.addPeak(k, 5, "up") ;
+            console.log(pos)
+        }
+    }
+    lastPos = pos ;
 
     for (let k = 0; k < 8; k++) {
-        platformInstance = new platform(129.5+(4*k), 5.5) ;
-        gridInstance.addPlatform(platformInstance) ;
+        pos = gridInstance.addPlatform(Math.floor(30+lastPos[0])+d0*k, 5) ;
     }
 
-    gridInstance.removeCol(Math.floor(189.5),Math.floor(189.5+(exaliterSpace*3)+15)+1)
+    for (let k = 110; k < 188; k++) {
+        pos = gridInstance.addPlatform(k, 4) ;
+    }
+
+    lastPos = pos ;
     for (let k = 0; k < 3; k++) {
-        platformInstance = new platform(189.5+(exaliterSpace*k), 5.5+k) ;
-        gridInstance.addPlatform(platformInstance) ;
+        pos = gridInstance.addPlatform(lastPos[0]+d1*(k+1), 5+k) ;
     }
-    platformInstance = new platform(189.5+(exaliterSpace*2)+4, 5.5+2) ;
-    gridInstance.addPlatform(platformInstance) ;
-    platformInstance = new platform(189.5+(exaliterSpace*2)+7, 5.5+1) ;
-    gridInstance.addPlatform(platformInstance) ;
-    peakInstance = new peak(190+(exaliterSpace*2)+8, 5, "up") ;
-    gridInstance.addPlatform(peakInstance) ;
-    platformInstance = new platform(189.5+(exaliterSpace*3)+7, 5.5+2) ;
-    gridInstance.addPlatform(platformInstance) ;
-    platformInstance = new platform(189.5+(exaliterSpace*3)+11, 5.5+2) ;
-    gridInstance.addPlatform(platformInstance) ;
-    platformInstance = new platform(189.5+(exaliterSpace*3)+15, 5.5+1) ;
-    gridInstance.addPlatform(platformInstance) ;
+    pos = gridInstance.addPlatform(pos[0]+d0, 7) ;
+    pos = gridInstance.addPlatform(pos[0]+dMoins1, 6) ;
+    pos = gridInstance.addPlatform(pos[0]+d0, 6) ;
+    pos = gridInstance.addPlatform(pos[0]+d1, 7) ;
+    pos = gridInstance.addPlatform(pos[0]+d0, 7) ;
+    pos = gridInstance.addPlatform(pos[0]+2.5, 6) ;
+    pos = gridInstance.addPlatform(pos[0]+2.5, 5) ;
+    for(let k = 0; k < 5; k++) {
+        pos = gridInstance.addPlatform(pos[0]+d1, 6+k) ;
+    }
+    for(let k = 0; k < 5; k++) {
+        pos = gridInstance.addPlatform(pos[0]+dMoins1, 10-k) ;
+    }
+    for(let k = 0; k < 15; k++) {
+        pos = gridInstance.addPlatform(pos[0]+d1, 6+k) ;
+    }
 
+    for (let k = Math.floor(pos[0]); k < Math.floor(pos[0])+100; k++) {
+        gridInstance.addPlatform(k, 4) ;
+    }
 
-
-
-    //platformInstance = new platform(6, 100+5) ;
-    //gridInstance.addPlatform(platformInstance) ;
-
-    //gridInstance.removeCol(50,54)
-
-    let endingInstance = new ending(270)
+    let endingInstance = new ending(Math.floor(pos[0])+50)
     gridInstance.addEnding(endingInstance)
 
 }
