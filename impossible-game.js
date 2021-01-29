@@ -1398,7 +1398,6 @@ function game() {
     frameTimeDiff.lastTime = Date.now() ;
 
     console.log(frameTimeDiff.dt)
-
     if (!heroInstance.isDead && !heroInstance.haveFinished) {
         if(keys.Space && (Date.now() - frameTimeDiff.startBegin > 500)) {
             heroInstance.jump() ;
@@ -1411,7 +1410,6 @@ function game() {
             frameTimeDiff.lastCheckPoint = Date.now()
             backGroundPositionSauv.save = drawingInstance.backGroundTimeScroll ;
             drawingInstance.sound.checkpointSaveTime = drawingInstance.sound.backGroundMusic.currentTime ;
-            console.log()
         }
         heroInstance.move(gridInstance) ;
         drawingInstance.ctx.clearRect(0,0, drawingInstance.width, drawingInstance.height) ;
@@ -1485,6 +1483,8 @@ function level1(gridInstance, heroInstance) {
     gridInstance.grid = [] ;
 
     let d1 = platformDistance(1, heroInstance) ;
+    let d2 = platformDistance(2, heroInstance) ;
+    let d27 = platformDistance(2.7, heroInstance) ;
     let d0 = 4 ;
     let dMoins1 = platformDistance(-1, heroInstance) ;
 
@@ -1499,7 +1499,6 @@ function level1(gridInstance, heroInstance) {
         gridInstance.addPlatform(k, 4) ;
         if((k-70)%8 === 0) {
             pos = gridInstance.addPeak(k, 5, "up") ;
-            console.log(pos)
         }
     }
     lastPos = pos ;
@@ -1533,12 +1532,95 @@ function level1(gridInstance, heroInstance) {
         pos = gridInstance.addPlatform(pos[0]+d1, 6+k) ;
     }
 
-    for (let k = Math.floor(pos[0]); k < Math.floor(pos[0])+100; k++) {
-        gridInstance.addPlatform(k, 4) ;
+
+    lastPos = pos ;
+    for (let k = Math.floor(lastPos[0])+4; k < Math.floor(lastPos[0])+24; k++) {
+        pos = gridInstance.addPlatform(k, 4) ;
     }
 
-    let endingInstance = new ending(Math.floor(pos[0])+50)
+    lastPos = pos ;
+    for (let k = Math.floor(lastPos[0]); k < Math.floor(lastPos[0])+10; k++) {
+        pos = gridInstance.addPlatform(k, 4) ;
+        pos = gridInstance.addPlatform(k, 7.6) ;
+        pos = gridInstance.addPeak(k, 6.5, "down") ;
+
+    }
+
+    pos = gridInstance.addPeak(pos[0]+4, 5, "left") ;
+    pos = gridInstance.addPlatform(pos[0]+1, 5) ;
+    pos = gridInstance.addPlatform(Math.floor(pos[0])+1, 4) ;
+    pos = gridInstance.addPeak(pos[0], 5, "right") ;
+
+    lastPos = pos ;
+    for (let k = Math.floor(lastPos[0]); k < Math.floor(lastPos[0])+10; k++) {
+        pos = gridInstance.addPlatform(k, 4) ;
+    }
+
+    lastPos = pos ;
+    for (let k = 1; k < 5; k++) {
+        pos = gridInstance.addPlatform(lastPos[0] + k*d2, 4+2*k) ;
+    }
+    lastPos = pos ;
+    for (let k = 1; k < 5; k++) {
+        pos = gridInstance.addPlatform(lastPos[0] + k*d27, lastPos[1]+2.7*k) ;
+    }
+
+    pos = gridInstance.addPlatform(pos[0]+d0, pos[1]) ;
+    pos = gridInstance.addPlatform(pos[0]+d0, pos[1]) ;
+    pos = gridInstance.addPlatform(pos[0]+2.5, pos[1]-1) ;
+    pos = gridInstance.addPlatform(pos[0]+d1, pos[1]+1) ;
+    pos = gridInstance.addPlatform(pos[0]+dMoins1, pos[1]-1) ;
+    pos = gridInstance.addPlatform(pos[0]+1, pos[1]) ;
+    pos = gridInstance.addPlatform(pos[0]+1, pos[1]) ;
+    pos = gridInstance.addPlatform(pos[0]+1, pos[1]) ;
+    pos = gridInstance.addPlatform(pos[0]+1, pos[1]) ;
+    pos = gridInstance.addPeak(pos[0], pos[1]+1, "up") ;
+    pos = gridInstance.addPlatform(pos[0]+dMoins1 - 1, pos[1]-2) ;
+    pos = gridInstance.addPlatform(pos[0]+2.5, pos[1]-1) ;
+    pos = gridInstance.addPlatform(pos[0]+2.5, pos[1]-1) ;
+    pos = gridInstance.addPeak(pos[0]-1, pos[1]+3, "left") ;
+    pos = gridInstance.addPlatform(pos[0]+1+dMoins1, pos[1]-4) ;
+    pos = gridInstance.addPlatform(pos[0]+dMoins1, pos[1]-1) ;
+    pos = gridInstance.addPlatform(pos[0]+2.5, pos[1]-1) ;
+    pos = gridInstance.addPlatform(pos[0]+dMoins1, pos[1]-1) ;
+
+    for (let k = 0; k < 12 ; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, pos[1]-Math.abs(Math.sin(k))) ;
+    }
+
+    lastPos = pos ;
+    for (let k = lastPos[0]+1; k < Math.floor(lastPos[0])+4; k++) {
+        pos = gridInstance.addPlatform(k, lastPos[1]) ;
+    }
+
+    //gameParameters.initial[0] = [pos[0]-6, pos[1] + 10] ;
+    pos = gridInstance.addPlatform(pos[0]+d0, pos[1]) ;
+
+    let heightVariation ;
+    heightVariation = 2 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    heightVariation = 2.7 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    heightVariation = -4 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    heightVariation = 1 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    heightVariation = 1.5 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    heightVariation = -1 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    heightVariation = 2.3 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    heightVariation = 1 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    heightVariation = -4 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    heightVariation = -4 ; pos = gridInstance.addPlatform(pos[0]+platformDistance(heightVariation, heroInstance), pos[1] + heightVariation) ;
+    pos = gridInstance.addPlatform(pos[0]+d0, 4) ;
+
+    lastPos = pos ;
+    for (let k = 1; k < 40; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 4) ;
+    }
+
+    let endingInstance = new ending(Math.floor(lastPos[0])+25)
     gridInstance.addEnding(endingInstance)
+
+
+    //heroInstance = new hero(gameParameters.initial[0], gameParameters.initial[1],
+    //    gameParameters.initial[2], gameParameters.initial[3], gameParameters.initial[4],
+    //    gameParameters.initial[5], gameParameters.initial[6],gameParameters.initial[7], gameParameters.initial[8]);
 
 }
 
