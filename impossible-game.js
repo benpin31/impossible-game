@@ -1427,10 +1427,6 @@ function game() {
             heroInstance.setDeathParticle() ; 
             deathFinish() ;
         } else {
-            if (toto === 0) {
-                console.log(drawingInstance.sound.backGroundMusic.currentTime)
-                toto++
-            }
             winFinish()   
         }
 
@@ -1616,11 +1612,173 @@ function level1(gridInstance, heroInstance) {
     pos = gridInstance.addPlatform(pos[0]+d0, 4) ;
 
     lastPos = pos ;
-    for (let k = 1; k < 40; k++) {
+    for (let k = 1; k < 20; k++) {
         pos = gridInstance.addPlatform(pos[0]+1, 4) ;
     }
 
-    let endingInstance = new ending(Math.floor(lastPos[0])+25)
+    pos = gridInstance.addPlatform(pos[0]+1, 4) ;
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 5; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 5; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 6; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 4; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 4; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 8; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 1; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 7; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 1; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 3; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 1; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPeak(pos[0], 5, "up") ;
+    for (let k = 0; k < 11; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPlatform(pos[0]+1, 4.5)
+    pos = gridInstance.addPeak(pos[0], 5.5, "up") ;
+    for (let k = 0; k < 5; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPlatform(pos[0]+1, 4.5)
+    pos = gridInstance.addPeak(pos[0], 5.5, "up") ;
+    for (let k = 0; k < 5; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPlatform(pos[0]+1, 4.5)
+    pos = gridInstance.addPeak(pos[0], 5.5, "up") ;
+    for (let k = 0; k < 3; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPlatform(pos[0]+1, 4.5)
+    pos = gridInstance.addPeak(pos[0], 5.5, "up") ;
+    for (let k = 0; k < 8; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPlatform(pos[0]+1, 5)
+    pos = gridInstance.addPeak(pos[0], 6, "up") ;
+
+    for (let k = 0; k < 8; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4) ;}
+    pos = gridInstance.addPlatform(pos[0]+d0, 4)
+    pos = gridInstance.addPlatform(pos[0]+d0, 4)
+    pos = gridInstance.addPlatform(pos[0]+1, 4)
+    pos = gridInstance.addPlatform(pos[0]+1, 4)
+    pos = gridInstance.addPlatform(pos[0]+1, 4)
+    pos = gridInstance.addPlatform(pos[0]+dMoins1, 3)
+    pos = gridInstance.addPlatform(pos[0]+d0, 3)
+    pos = gridInstance.addPlatform(pos[0]+dMoins1, 2)
+    pos = gridInstance.addPlatform(pos[0]+1, 2)
+    pos = gridInstance.addPlatform(pos[0]+1, 2)
+    pos = gridInstance.addPlatform(pos[0]+1, 2)
+    lastPos = pos ;
+    for (let k = 0; k < 16; k++) {pos = gridInstance.addPlatform(pos[0]+1, 2) ;}
+    pos = lastPos ;
+    for (let k = 0; k < 16; k++) {pos = gridInstance.addPlatform(pos[0]+1, 4.3) ;}
+
+    for (let l = 2; l< 16; l+=2) {
+        lastPos = pos ;
+        for (let k = 0; k < 3; k++) {pos = gridInstance.addPlatform(pos[0]+1, l) ;}
+        pos = gridInstance.addPlatform(pos[0]+1, l+2)
+        pos = gridInstance.addPlatform(pos[0], l)
+        pos = gridInstance.addPlatform(pos[0], l+1)
+        pos = gridInstance.addPlatform(pos[0], l+2)
+        pos = lastPos
+        if(l==2) { pos = gridInstance.addPlatform(pos[0],5.3+(l-2)) }
+        pos = gridInstance.addPlatform(pos[0],5.3+(l-2)+1)
+        for (let k = 0; k < 3; k++) {pos = gridInstance.addPlatform(pos[0], 5.3+(l-2)+k+1) ;}
+        for (let k = 0; k < 3; k++) {pos = gridInstance.addPlatform(pos[0]+1, 6.3+l) ; pos = gridInstance.addPeak(pos[0], 5.3+l, "down")}
+    }
+
+    for (let k = 1; k < 20; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 16) ;
+        pos = gridInstance.addPlatform(pos[0], 20.3) ;
+        pos = gridInstance.addPeak(pos[0], 19.3, "down")
+    }
+
+    for (let k = 1; k < 40; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 16) ;
+        if(k%5 === 0) {
+            pos = gridInstance.addPeak(pos[0], 17.5, "left")
+        }
+    }
+    for (let k = 1; k < 40; k++) {
+        if(k%5 === 0) {
+            pos = gridInstance.addPlatform(pos[0]+d0, 16) ;
+        }
+    }
+    for (let k = 1; k < 15; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 16) ;
+    }
+    for (let k = 1; k < 40; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 16) ;
+        if(k%5 === 0) {
+            lastPos = pos
+            pos = gridInstance.addPeak(pos[0]+ Math.sin(k), 17.5, "left")
+            pos = gridInstance.addPeak(pos[0]+0.5, 17.5, "left")
+            pos = lastPos
+
+        }
+    }
+    for (let k = 1; k < 10; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 16) ;
+    }
+    for(let k = 0; k < 20; k++) {
+        pos = gridInstance.addPlatform(pos[0]+d1, 16+k) ;
+    }
+    lastPos = pos ;
+    pos = gridInstance.addPlatform(pos[0]+d1+1, pos[1]+2) ;
+    pos = gridInstance.addPeak(pos[0]-1, pos[1], "left") ;
+    pos = lastPos
+
+    for(let k = 0; k < 8; k++) {
+        pos = gridInstance.addPlatform(pos[0]+2.5, pos[1]-1) ;
+    }
+    for(let k = 0; k < 60; k++) {
+        pos = gridInstance.addPlatform(pos[0]+d1, pos[1]+1) ;
+    }
+
+    pos = gridInstance.addPlatform(pos[0]+8, pos[1]-22) ;
+
+    for(let k = 0; k < 7; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, pos[1]) ;
+    }
+
+    pos = gridInstance.addPlatform(pos[0]+8, pos[1]-22) ;
+
+    for(let k = 0; k < 7; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, pos[1]) ;
+    }
+    pos = gridInstance.addPeak(pos[0], pos[1]+1, "up")
+
+    for (let k = 1; k < 15; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 4) ;
+    }
+
+    for (let k = 0; k < 40; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 4) ;
+        if((k)%4 === 0) {
+            pos = gridInstance.addPeak(pos[0], 5, "up") ;
+        }
+    }
+
+    for (let k = 0; k < 40; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 4) ;
+        if((k)%8 === 0) {
+            pos = gridInstance.addPeak(pos[0], 5, "up") ;
+        }
+    }
+
+    for (let k = 0; k < 80; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 4) ;
+        if((k)%16 === 0) {
+            pos = gridInstance.addPeak(pos[0], 5, "up") ;
+        }
+    }
+
+    lastPos = pos ;
+    for (let k = 1; k < 80; k++) {
+        pos = gridInstance.addPlatform(pos[0]+1, 4) ;
+    }
+
+    let endingInstance = new ending(Math.floor(lastPos[0])+33)
     gridInstance.addEnding(endingInstance)
 
 
