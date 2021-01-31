@@ -1297,9 +1297,11 @@ class drawing {
             // if the first image is = 0 mod 2, it is city, and we draw city before city reverse
             this.ctxBack.drawImage(this.backgroundImageCity,xPosition*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)
             this.ctxBack.drawImage(this.backgroundImageCityReverse,(xPosition+1)*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)
+            this.ctxBack.drawImage(this.backgroundImageCity,(xPosition+2)*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)
         } else {
             this.ctxBack.drawImage(this.backgroundImageCityReverse,xPosition*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)
-            this.ctxBack.drawImage(this.backgroundImageCity,(xPosition+1)*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)       
+            this.ctxBack.drawImage(this.backgroundImageCity,(xPosition+1)*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight) 
+            this.ctxBack.drawImage(this.backgroundImageCityReverse,(xPosition+2)*imageWidth-this.backGroundTimeScroll,0,imageWidth ,imageHeight)      
         }
 
     }
